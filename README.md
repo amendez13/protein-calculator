@@ -8,9 +8,11 @@ A FastAPI webapp that helps users log and count protein intake throughout the da
 
 ## Features
 
-- Feature 1: Description
-- Feature 2: Description
-- Feature 3: Description
+- **Log protein entries**: Record food name and protein grams with timestamps
+- **Daily totals**: View your protein intake summary for the current day
+- **History tracking**: Browse past entries and weekly summaries
+- **REST API**: Full OpenAPI documentation at `/docs`
+- **Simple deployment**: Single-user app designed for VPS with Tailscale
 
 ## Quick Start
 
@@ -48,8 +50,11 @@ cp config/config.example.yaml config/config.yaml
 ### Usage
 
 ```bash
-# Run the application
-python -m app.main
+# Run development server (with auto-reload)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Access the API docs
+open http://localhost:8000/docs
 ```
 
 ## Configuration
@@ -144,9 +149,4 @@ See [docs/CI.md](docs/CI.md) for details.
 
 ## License
 
-[Choose your license]
-
-## Acknowledgments
-
-- [Acknowledgment 1]
-- [Acknowledgment 2]
+MIT
