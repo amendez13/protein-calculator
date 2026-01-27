@@ -41,6 +41,41 @@ const API = {
     const res = await fetch(`/api/entries/${entryId}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete entry");
   },
+
+  async getSimulationSummary() {
+    const res = await fetch("/api/summary/simulation");
+    if (!res.ok) throw new Error("Failed to load simulation summary");
+    return res.json();
+  },
+
+  async getSimulationEntries() {
+    const res = await fetch("/api/entries/simulation");
+    if (!res.ok) throw new Error("Failed to load simulation entries");
+    return res.json();
+  },
+
+  async addSimulationEntry(foodId, quantity, quantityType) {
+    const res = await fetch("/api/entries/simulation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        food_item_id: foodId,
+        quantity,
+        quantity_type: quantityType,
+        is_simulation: true,
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail || "Failed to add planned entry");
+    }
+    return res.json();
+  },
+
+  async clearSimulation() {
+    const res = await fetch("/api/entries/simulation", { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to clear simulation");
+  },
 };
 
 const App = {
@@ -56,6 +91,8 @@ const App = {
     this.bindTabs();
     this.bindLogForm();
     this.bindEntriesList();
+    this.bindSimulationForm();
+    this.bindClearSimulation();
     this.refreshSummary();
     this.loadTodayEntries();
     this.renderViews();
@@ -68,6 +105,9 @@ const App = {
       this.state.current = Number(summary.total_protein ?? 0);
       this.renderStats();
       this.updateWheel(Number(summary.percentage ?? 0));
+      if (this.state.currentTab === "simulation") {
+        this.loadSimulation();
+      }
     } catch {
       this.renderStats();
       this.updateWheel(0);
@@ -86,6 +126,9 @@ const App = {
     this.state.currentTab = tabName;
     this.renderTabs();
     this.renderViews();
+    if (tabName === "simulation") {
+      this.loadSimulation();
+    }
   },
 
   bindLogForm() {
@@ -287,6 +330,223 @@ const App = {
     await API.deleteEntry(entryId);
     await this.loadTodayEntries();
     await this.refreshSummary();
+  },
+
+  bindSimulationForm() {
+    const form = document.getElementById("simulation-form");
+    const foodSearch = document.getElementById("sim-food-search");
+    const foodDropdown = document.getElementById("sim-food-dropdown");
+    const selectedFoodId = document.getElementById("sim-selected-food-id");
+    const quantity = document.getElementById("sim-quantity");
+    const quantityType = document.getElementById("sim-quantity-type");
+    const message = document.getElementById("sim-message");
+
+    if (!form || !foodSearch || !foodDropdown || !selectedFoodId || !quantity || !quantityType || !message) return;
+
+    const showMessage = (text, kind) => {
+      message.classList.toggle("is-error", kind === "error");
+      message.classList.toggle("is-success", kind === "success");
+      message.textContent = text;
+    };
+
+    const hideDropdown = () => {
+      foodDropdown.innerHTML = "";
+      foodDropdown.setAttribute("hidden", "");
+    };
+
+    const renderDropdown = (foods) => {
+      if (!foods.length) {
+        hideDropdown();
+        return;
+      }
+
+      foodDropdown.removeAttribute("hidden");
+      foodDropdown.innerHTML = foods
+        .slice(0, 20)
+        .map((food) => {
+          const meta = food.serving_size_grams
+            ? `${food.protein_per_100g}g/100g • ${food.serving_size_grams}g ${food.serving_name || "serving"}`
+            : `${food.protein_per_100g}g/100g`;
+          return `
+            <div class="dropdown__item" role="option" data-id="${food.id}" data-name="${food.name}">
+              ${food.name}
+              <span class="dropdown__meta">${meta}</span>
+            </div>
+          `;
+        })
+        .join("");
+    };
+
+    let searchTimeout = null;
+    let lastQuery = "";
+
+    foodSearch.addEventListener("input", () => {
+      const query = foodSearch.value.trim();
+      lastQuery = query;
+      selectedFoodId.value = "";
+      showMessage("", "none");
+
+      if (searchTimeout) window.clearTimeout(searchTimeout);
+      if (!query) {
+        hideDropdown();
+        return;
+      }
+
+      searchTimeout = window.setTimeout(async () => {
+        try {
+          const foods = await API.getFoods(query);
+          if (lastQuery !== query) return;
+          renderDropdown(foods);
+        } catch {
+          hideDropdown();
+        }
+      }, 200);
+    });
+
+    foodDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest(".dropdown__item");
+      if (!item) return;
+      const id = item.getAttribute("data-id");
+      const name = item.getAttribute("data-name");
+      if (!id || !name) return;
+
+      selectedFoodId.value = id;
+      foodSearch.value = name;
+      hideDropdown();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (e.target === foodSearch) return;
+      if (foodDropdown.contains(e.target)) return;
+      hideDropdown();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showMessage("", "none");
+
+      const foodId = Number(selectedFoodId.value);
+      const qty = Number(quantity.value);
+      const qtyType = String(quantityType.value || "grams");
+
+      if (!foodId) {
+        showMessage("Pick a food from the dropdown.", "error");
+        return;
+      }
+      if (!Number.isFinite(qty) || qty <= 0) {
+        showMessage("Enter a quantity greater than 0.", "error");
+        return;
+      }
+
+      const button = form.querySelector('button[type="submit"]');
+      if (button) button.disabled = true;
+
+      try {
+        await API.addSimulationEntry(foodId, qty, qtyType);
+        quantity.value = "";
+        selectedFoodId.value = "";
+        foodSearch.value = "";
+        hideDropdown();
+        showMessage("Planned.", "success");
+        await this.loadSimulation();
+      } catch (err) {
+        showMessage(err instanceof Error ? err.message : "Failed to plan entry.", "error");
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  },
+
+  bindClearSimulation() {
+    const button = document.getElementById("clear-simulation");
+    if (!button) return;
+
+    button.addEventListener("click", async () => {
+      const ok = window.confirm("Clear all planned items?");
+      if (!ok) return;
+      button.disabled = true;
+      try {
+        await API.clearSimulation();
+        await this.loadSimulation();
+      } finally {
+        button.disabled = false;
+      }
+    });
+  },
+
+  async loadSimulation() {
+    try {
+      const [summary, entries] = await Promise.all([API.getSimulationSummary(), API.getSimulationEntries()]);
+      this.renderSimulation(summary, Array.isArray(entries) ? entries : []);
+    } catch {
+      this.renderSimulation({ goal: this.state.goal, actual_protein: this.state.current, simulation_protein: 0, combined_total: this.state.current }, []);
+    }
+  },
+
+  renderSimulation(summary, entries) {
+    const actual = Number(summary.actual_protein ?? 0);
+    const planned = Number(summary.simulation_protein ?? 0);
+    const combined = Number(summary.combined_total ?? actual + planned);
+    const goal = Number(summary.goal ?? this.state.goal ?? 150);
+
+    const simActual = document.getElementById("sim-actual");
+    const simPlanned = document.getElementById("sim-planned");
+    const simGoal = document.getElementById("sim-goal");
+    const simCombined = document.getElementById("sim-combined");
+
+    if (simActual) simActual.textContent = String(actual);
+    if (simPlanned) simPlanned.textContent = String(planned);
+    if (simGoal) simGoal.textContent = String(goal);
+    if (simCombined) simCombined.textContent = `${combined}g`;
+
+    this.updateSimulationWheel(actual, combined, goal);
+    this.renderSimulationEntries(entries);
+  },
+
+  updateSimulationWheel(actual, combined, goal) {
+    const circumference = 314;
+    const safeGoal = goal > 0 ? goal : 1;
+    const actualPercent = Math.max(0, Math.min(100, (actual / safeGoal) * 100));
+    const combinedPercent = Math.max(0, Math.min(100, (combined / safeGoal) * 100));
+
+    const actualCircle = document.querySelector(".progress-wheel--sim .progress--actual");
+    const plannedCircle = document.querySelector(".progress-wheel--sim .progress--planned");
+    if (!actualCircle || !plannedCircle) return;
+
+    plannedCircle.style.strokeDashoffset = String(circumference - (combinedPercent / 100) * circumference);
+    actualCircle.style.strokeDashoffset = String(circumference - (actualPercent / 100) * circumference);
+  },
+
+  renderSimulationEntries(entries) {
+    const container = document.getElementById("simulation-entries");
+    if (!container) return;
+
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty-state">No planned items yet.</div>';
+      return;
+    }
+
+    const formatQuantity = (entry) => {
+      const qty = Number(entry.quantity ?? 0);
+      const type = String(entry.quantity_type ?? "grams");
+      if (type === "servings") return `${qty} servings`;
+      return `${qty}g`;
+    };
+
+    container.innerHTML = entries
+      .map((entry) => {
+        const name = entry.food_item?.name || "Unknown";
+        const qty = formatQuantity(entry);
+        const protein = `${Number(entry.protein_amount ?? 0)}g`;
+        return `
+          <div class="entry-item entry-item--no-actions">
+            <div class="entry-item__name">${name}</div>
+            <div class="entry-item__meta">${qty}</div>
+            <div class="entry-item__protein">${protein}</div>
+          </div>
+        `;
+      })
+      .join("");
   },
 
   updateWheel(percentage) {

@@ -92,7 +92,79 @@
 
           <section id="view-simulation" class="view" data-view="simulation" hidden>
             <h2 class="view__title">Simulation</h2>
-            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+
+            <section class="simulation-section" aria-label="Simulation summary">
+              <div class="simulation-grid">
+                <div class="wheel-container wheel-container--sim" aria-hidden="true">
+                  <svg class="progress-wheel progress-wheel--sim" viewBox="0 0 120 120">
+                    <circle class="bg" cx="60" cy="60" r="50" />
+                    <circle class="progress progress--planned" cx="60" cy="60" r="50" />
+                    <circle class="progress progress--actual" cx="60" cy="60" r="50" />
+                  </svg>
+                  <div class="wheel-center">
+                    <div class="wheel-center__current" id="sim-combined">0g</div>
+                    <div class="wheel-center__label">Combined</div>
+                  </div>
+                </div>
+
+                <div class="simulation-stats" aria-label="Actual, planned, combined">
+                  <div class="sim-stat">
+                    <span class="sim-stat__label">Actual</span>
+                    <span class="sim-stat__value"><span id="sim-actual">0</span>g</span>
+                  </div>
+                  <div class="sim-stat">
+                    <span class="sim-stat__label">Planned</span>
+                    <span class="sim-stat__value"><span id="sim-planned">0</span>g</span>
+                  </div>
+                  <div class="sim-stat">
+                    <span class="sim-stat__label">Goal</span>
+                    <span class="sim-stat__value"><span id="sim-goal">150</span>g</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="simulation-log">
+                <h3 class="section-title">Plan Additional Items</h3>
+                <form id="simulation-form" class="log-form">
+                  <div class="form-group">
+                    <label class="label" for="sim-food-search">Food</label>
+                    <input
+                      type="text"
+                      id="sim-food-search"
+                      placeholder="Search foods..."
+                      autocomplete="off"
+                      inputmode="search"
+                    />
+                    <input type="hidden" id="sim-selected-food-id" />
+                    <div id="sim-food-dropdown" class="dropdown" role="listbox" aria-label="Food results" hidden></div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="label" for="sim-quantity">Amount</label>
+                      <input type="number" id="sim-quantity" placeholder="0" step="0.1" min="0" />
+                    </div>
+
+                    <div class="form-group">
+                      <label class="label" for="sim-quantity-type">Unit</label>
+                      <select id="sim-quantity-type">
+                        <option value="grams">grams</option>
+                        <option value="servings">servings</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button type="submit" class="button button--primary">Add Planned</button>
+                  <div id="sim-message" class="message" role="status" aria-live="polite"></div>
+                </form>
+              </div>
+
+              <div class="simulation-entries">
+                <h3 class="section-title">Planned Items</h3>
+                <div id="simulation-entries" class="entries-list"></div>
+                <button id="clear-simulation" class="button button--danger" type="button">Clear All Planned</button>
+              </div>
+            </section>
           </section>
 
           <section id="view-history" class="view" data-view="history" hidden>
