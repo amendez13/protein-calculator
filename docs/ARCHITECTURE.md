@@ -4,7 +4,29 @@ This document describes the technical architecture of protein-calculator.
 
 ## Overview
 
-[High-level description of the system architecture]
+Protein Calculator is a FastAPI single-user web app with:
+
+- An async SQLAlchemy + SQLite database
+- A REST API under `/api/*`
+- A static single-page frontend served from `app/static/`
+
+This document evolves as features land; see each PR for incremental design notes.
+
+## Configuration
+
+Runtime config is provided via `app/config.py` using `pydantic-settings`.
+
+- `PROTEIN_DATABASE_URL` (default: `sqlite+aiosqlite:///./protein.db`)
+- `PROTEIN_DEBUG` (default: `false`, enables SQLAlchemy echo)
+
+## Database
+
+`app/database.py` owns engine/session lifecycle:
+
+- `engine`: global async engine
+- `async_session`: session factory (`async_sessionmaker`)
+- `get_db()`: FastAPI dependency yielding an `AsyncSession`
+- `init_db()`: creates all tables from `Base.metadata`
 
 ## System Components
 
