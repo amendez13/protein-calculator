@@ -28,6 +28,10 @@ Runtime config is provided via `app/config.py` using `pydantic-settings`.
 - `get_db()`: FastAPI dependency yielding an `AsyncSession`
 - `init_db()`: creates all tables from `Base.metadata`
 
+Models live under `app/models/` and inherit from `app.database.Base`. The first model is:
+
+- `FoodItem` (`food_items`): protein content per 100g plus optional serving metadata
+
 ## System Components
 
 ### Component Diagram
