@@ -64,6 +64,13 @@ Models live under `app/models/` and inherit from `app.database.Base`. The first 
 **Key Files**:
 - `app/component_a.py`
 
+## API Layer
+
+Routes are grouped under `app/routes/` and call into `app/services/` for business logic.
+
+- `app/routes/foods.py`: `/api/foods` CRUD endpoints
+- `app/services/food_service.py`: DB queries and mutations for food items
+
 ### Component B
 
 **Purpose**: [Description]
