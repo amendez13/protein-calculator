@@ -92,6 +92,8 @@ Current frontend integrations:
 - Logging uses `POST /api/entries/`
 - Wheel/goal uses `GET /api/summary/today`
 - Simulation view uses `GET /api/summary/simulation` and `GET/POST/DELETE /api/entries/simulation`
+- History view uses `GET /api/summary/history?days=...`
+- Settings view uses `GET/PUT /api/settings/`, and food admin uses `GET /api/foods/` + `POST /api/foods/`
 
 ### Component B
 
