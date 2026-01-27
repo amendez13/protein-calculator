@@ -78,6 +78,14 @@ Routes are grouped under `app/routes/` and call into `app/services/` for busines
 - `app/services/settings_service.py`: get-or-create and update logic for settings
 - Simulation endpoints live under `/api/entries/simulation` and `/api/summary/simulation`.
 
+## Frontend
+
+The frontend is a static single-page app:
+
+- Mounted at `/static` (CSS/JS/assets) via `fastapi.staticfiles.StaticFiles`
+- `/` serves `app/static/index.html`
+- `app/static/js/app.js` owns client-side state and view rendering (API wiring lands incrementally)
+
 ### Component B
 
 **Purpose**: [Description]

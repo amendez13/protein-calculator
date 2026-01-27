@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Protein Calculator</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header__title">
+          <h1>Protein Tracker</h1>
+        </div>
+
+        <nav class="tabs" aria-label="Main navigation">
+          <button class="tab is-active" type="button" data-tab="today">Today</button>
+          <button class="tab" type="button" data-tab="simulation">Simulation</button>
+          <button class="tab" type="button" data-tab="history">History</button>
+          <button class="tab" type="button" data-tab="settings">Settings</button>
+        </nav>
+      </header>
+
+      <main class="main">
+        <section class="progress-section" aria-label="Daily progress">
+          <div class="wheel-container" aria-hidden="true">
+            <svg class="progress-wheel" viewBox="0 0 120 120">
+              <circle class="bg" cx="60" cy="60" r="50" />
+              <circle class="progress" cx="60" cy="60" r="50" />
+            </svg>
+            <div class="wheel-center">
+              <div class="wheel-center__current" id="current-protein">0g</div>
+              <div class="wheel-center__label">Today</div>
+            </div>
+          </div>
+
+          <div class="stats" aria-label="Current and goal">
+            <span class="stats__current" id="stats-current">0</span>g
+            <span class="stats__sep">/</span>
+            <span class="stats__goal" id="stats-goal">150</span>g
+          </div>
+        </section>
+
+        <section class="content" aria-label="Views">
+          <section id="view-today" class="view" data-view="today">
+            <h2 class="view__title">Today</h2>
+            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+          </section>
+
+          <section id="view-simulation" class="view" data-view="simulation" hidden>
+            <h2 class="view__title">Simulation</h2>
+            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+          </section>
+
+          <section id="view-history" class="view" data-view="history" hidden>
+            <h2 class="view__title">History</h2>
+            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+          </section>
+
+          <section id="view-settings" class="view" data-view="settings" hidden>
+            <h2 class="view__title">Settings</h2>
+            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>
