@@ -30,6 +30,17 @@ const API = {
     if (!res.ok) throw new Error("Failed to load summary");
     return res.json();
   },
+
+  async getTodayEntries() {
+    const res = await fetch("/api/entries/today");
+    if (!res.ok) throw new Error("Failed to load entries");
+    return res.json();
+  },
+
+  async deleteEntry(entryId) {
+    const res = await fetch(`/api/entries/${entryId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete entry");
+  },
 };
 
 const App = {
@@ -44,7 +55,9 @@ const App = {
   init() {
     this.bindTabs();
     this.bindLogForm();
+    this.bindEntriesList();
     this.refreshSummary();
+    this.loadTodayEntries();
     this.renderViews();
   },
 
@@ -191,6 +204,7 @@ const App = {
         foodSearch.value = "";
         hideDropdown();
         showMessage("Logged.", "success");
+        await this.loadTodayEntries();
         await this.refreshSummary();
       } catch (err) {
         showMessage(err instanceof Error ? err.message : "Failed to log entry.", "error");
@@ -198,6 +212,81 @@ const App = {
         if (button) button.disabled = false;
       }
     });
+  },
+
+  bindEntriesList() {
+    const list = document.getElementById("entries-list");
+    if (!list) return;
+
+    list.addEventListener("click", async (e) => {
+      const button = e.target.closest(".delete-btn");
+      if (!button) return;
+      const id = Number(button.getAttribute("data-id"));
+      if (!id) return;
+
+      button.disabled = true;
+      try {
+        await this.deleteEntry(id);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  },
+
+  async loadTodayEntries() {
+    try {
+      const entries = await API.getTodayEntries();
+      this.state.entries = Array.isArray(entries) ? entries : [];
+      this.renderEntries();
+    } catch {
+      this.state.entries = [];
+      this.renderEntries();
+    }
+  },
+
+  renderEntries() {
+    const list = document.getElementById("entries-list");
+    const total = document.getElementById("total-protein");
+    if (!list || !total) return;
+
+    const entries = this.state.entries || [];
+    if (!entries.length) {
+      list.innerHTML = '<div class="empty-state">No entries yet. Log a food above.</div>';
+      total.textContent = "0";
+      return;
+    }
+
+    const formatQuantity = (entry) => {
+      const qty = Number(entry.quantity ?? 0);
+      const type = String(entry.quantity_type ?? "grams");
+      if (type === "servings") return `${qty} servings`;
+      return `${qty}g`;
+    };
+
+    const sum = entries.reduce((acc, entry) => acc + Number(entry.protein_amount ?? 0), 0);
+    total.textContent = String(Math.round(sum * 10) / 10);
+
+    list.innerHTML = entries
+      .map((entry) => {
+        const name = entry.food_item?.name || "Unknown";
+        const qty = formatQuantity(entry);
+        const protein = `${Number(entry.protein_amount ?? 0)}g`;
+        return `
+          <div class="entry-item" data-id="${entry.id}">
+            <div class="entry-item__name">${name}</div>
+            <div class="entry-item__meta">${qty}</div>
+            <div class="entry-item__protein">${protein}</div>
+            <button class="delete-btn" type="button" data-id="${entry.id}" aria-label="Delete entry">×</button>
+          </div>
+        `;
+      })
+      .join("");
+  },
+
+  async deleteEntry(entryId) {
+    await API.deleteEntry(entryId);
+    await this.loadTodayEntries();
+    await this.refreshSummary();
   },
 
   updateWheel(percentage) {
