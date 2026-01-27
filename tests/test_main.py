@@ -1,30 +1,15 @@
-"""Tests for the main module."""
+"""Tests for the FastAPI app entrypoint."""
 
-from app.main import greet
+from __future__ import annotations
 
+import asyncio
+from pathlib import Path
 
-class TestGreet:
-    """Tests for the greet function."""
+import pytest
 
-    def test_greet_default(self) -> None:
-        """Test greeting with default name."""
-        result = greet()
-        assert result == "Hello, World!"
-
-    def test_greet_with_name(self) -> None:
-        """Test greeting with a specific name."""
-        result = greet("Alice")
-        assert result == "Hello, Alice!"
-
-    def test_greet_with_none(self) -> None:
-        """Test greeting with None explicitly passed."""
-        result = greet(None)
-        assert result == "Hello, World!"
-
-    def test_greet_with_empty_string(self) -> None:
-        """Test greeting with empty string."""
-        result = greet("")
-        assert result == "Hello, !"
+from app import config as config_module
+from app import database as database_module
+from app.main import app
 
 
 class TestSampleData:
@@ -38,3 +23,20 @@ class TestSampleData:
     def test_sample_data_has_number(self, sample_data: dict) -> None:
         """Test that sample_data fixture has expected number."""
         assert sample_data["number"] == 42
+
+
+def test_app_lifespan_initializes_db(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    asyncio.run(database_module.reset_database_state())
+    config_module.get_settings.cache_clear()
+    db_path = tmp_path / "protein.db"
+    monkeypatch.setenv("PROTEIN_DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+
+    async def _run() -> None:
+        async with app.router.lifespan_context(app):
+            pass
+
+    try:
+        asyncio.run(_run())
+        assert db_path.exists()
+    finally:
+        asyncio.run(database_module.reset_database_state())

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
 from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import config as config_module
+from app import database as database_module
 
 
 def _sqlite_url(db_path: Path) -> str:
@@ -26,28 +26,22 @@ def test_get_settings_reads_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
 
 def test_init_db_creates_sqlite_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    asyncio.run(database_module.reset_database_state())
     config_module.get_settings.cache_clear()
     db_path = tmp_path / "protein.db"
     monkeypatch.setenv("PROTEIN_DATABASE_URL", _sqlite_url(db_path))
-
-    import app.database as database_module
-
-    database_module = importlib.reload(database_module)
 
     asyncio.run(database_module.init_db())
     try:
         assert db_path.exists()
     finally:
-        asyncio.run(database_module.engine.dispose())
+        asyncio.run(database_module.reset_database_state())
 
 
 def test_get_db_yields_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    asyncio.run(database_module.reset_database_state())
     config_module.get_settings.cache_clear()
     monkeypatch.setenv("PROTEIN_DATABASE_URL", _sqlite_url(tmp_path / "sessions.db"))
-
-    import app.database as database_module
-
-    database_module = importlib.reload(database_module)
 
     async def _run() -> None:
         async for session in database_module.get_db():
@@ -57,4 +51,4 @@ def test_get_db_yields_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
     try:
         asyncio.run(_run())
     finally:
-        asyncio.run(database_module.engine.dispose())
+        asyncio.run(database_module.reset_database_state())

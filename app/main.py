@@ -1,26 +1,23 @@
-"""Main entry point for protein-calculator."""
+"""FastAPI application entry point."""
 
-from typing import Optional
+from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
-def greet(name: Optional[str] = None) -> str:
-    """Return a greeting message.
-
-    Args:
-        name: Optional name to greet. Defaults to "World".
-
-    Returns:
-        A greeting string.
-    """
-    if name is None:
-        name = "World"
-    return f"Hello, {name}!"
+from fastapi import FastAPI
 
 
-def main() -> None:
-    """Main entry point."""
-    print(greet())
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    from app.database import init_db
+
+    await init_db()
+    yield
 
 
-if __name__ == "__main__":
-    main()
+def create_app() -> FastAPI:
+    return FastAPI(title="Protein Calculator", lifespan=lifespan)
+
+
+app = create_app()
