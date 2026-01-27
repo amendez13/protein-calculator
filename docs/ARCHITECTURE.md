@@ -91,6 +91,7 @@ Current frontend integrations:
 - Food search uses `GET /api/foods/?search=...`
 - Logging uses `POST /api/entries/`
 - Wheel/goal uses `GET /api/summary/today`
+- Simulation view uses `GET /api/summary/simulation` and `GET/POST/DELETE /api/entries/simulation`
 
 ### Component B
 
