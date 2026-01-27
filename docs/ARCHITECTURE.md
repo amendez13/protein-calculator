@@ -74,6 +74,8 @@ Routes are grouped under `app/routes/` and call into `app/services/` for busines
 - `app/services/entry_service.py`: protein calculation + entry CRUD
 - `app/routes/summary.py`: `/api/summary` endpoints (today + history)
 - `app/services/summary_service.py`: daily totals and goal/percentage calculations
+- `app/routes/settings.py`: `/api/settings` endpoints (get/update goal)
+- `app/services/settings_service.py`: get-or-create and update logic for settings
 
 ### Component B
 
