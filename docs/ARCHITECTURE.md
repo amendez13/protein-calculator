@@ -32,6 +32,7 @@ Models live under `app/models/` and inherit from `app.database.Base`. The first 
 
 - `FoodItem` (`food_items`): protein content per 100g plus optional serving metadata
 - `ProteinEntry` (`protein_entries`): logged intake events (actual + simulation)
+- `UserSettings` (`user_settings`): single-row config (protein goal)
 
 ## System Components
 
