@@ -51,3 +51,16 @@ async def test_food_crud_happy_path(api_client: httpx.AsyncClient) -> None:
 async def test_get_food_404(api_client: httpx.AsyncClient) -> None:
     response = await api_client.get("/api/foods/999999")
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_list_foods_filters_by_category(api_client: httpx.AsyncClient) -> None:
+    created = await api_client.post(
+        "/api/foods/",
+        json={"name": "Category Food", "protein_per_100g": 9.0, "category": "test-cat"},
+    )
+    assert created.status_code == 201
+
+    filtered = await api_client.get("/api/foods/", params={"category": "test-cat"})
+    assert filtered.status_code == 200
+    assert any(food["name"] == "Category Food" for food in filtered.json())
