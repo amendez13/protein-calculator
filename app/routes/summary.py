@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.services.summary_service import get_history, get_today_summary
+from app.services.summary_service import get_history, get_simulation_summary, get_today_summary
 
 router = APIRouter(prefix="/api/summary", tags=["summary"])
 
@@ -22,3 +22,8 @@ async def history(
     db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, object]]:
     return await get_history(db, days=days)
+
+
+@router.get("/simulation")
+async def simulation_summary(db: AsyncSession = Depends(get_db)) -> dict[str, object]:
+    return await get_simulation_summary(db)

@@ -23,6 +23,16 @@ async def get_daily_total(db: AsyncSession, target_date: Date) -> float:
     return float(total) if total is not None else 0.0
 
 
+async def get_simulation_total(db: AsyncSession, target_date: Date) -> float:
+    result = await db.execute(
+        select(func.sum(ProteinEntry.protein_amount))
+        .where(ProteinEntry.date == target_date)
+        .where(ProteinEntry.is_simulation.is_(True)),
+    )
+    total = result.scalar_one_or_none()
+    return float(total) if total is not None else 0.0
+
+
 async def get_goal(db: AsyncSession) -> float:
     settings: UserSettings = await ensure_settings(db)
     return float(settings.daily_protein_goal)
@@ -85,3 +95,21 @@ async def get_history(db: AsyncSession, *, days: int) -> list[dict[str, object]]
             }
         )
     return history
+
+
+async def get_simulation_summary(db: AsyncSession) -> dict[str, object]:
+    today = Date.today()
+    goal = await get_goal(db)
+
+    actual = round(await get_daily_total(db, today), 1)
+    simulated = round(await get_simulation_total(db, today), 1)
+    combined = round(actual + simulated, 1)
+
+    return {
+        "date": today.isoformat(),
+        "actual_protein": actual,
+        "simulation_protein": simulated,
+        "combined_total": combined,
+        "goal": goal,
+        "percentage": _percentage(combined, goal),
+    }
