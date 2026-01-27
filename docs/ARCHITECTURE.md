@@ -86,6 +86,12 @@ The frontend is a static single-page app:
 - `/` serves `app/static/index.html`
 - `app/static/js/app.js` owns client-side state and view rendering (API wiring lands incrementally)
 
+Current frontend integrations:
+
+- Food search uses `GET /api/foods/?search=...`
+- Logging uses `POST /api/entries/`
+- Wheel/goal uses `GET /api/summary/today`
+
 ### Component B
 
 **Purpose**: [Description]
