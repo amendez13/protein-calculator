@@ -31,6 +31,7 @@ Runtime config is provided via `app/config.py` using `pydantic-settings`.
 Models live under `app/models/` and inherit from `app.database.Base`. The first model is:
 
 - `FoodItem` (`food_items`): protein content per 100g plus optional serving metadata
+- `ProteinEntry` (`protein_entries`): logged intake events (actual + simulation)
 
 ## System Components
 
