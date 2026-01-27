@@ -23,10 +23,14 @@ Runtime config is provided via `app/config.py` using `pydantic-settings`.
 
 `app/database.py` owns engine/session lifecycle:
 
-- `engine`: global async engine
-- `async_session`: session factory (`async_sessionmaker`)
+- `get_engine()`: cached async engine
+- `get_sessionmaker()`: cached session factory (`async_sessionmaker`)
 - `get_db()`: FastAPI dependency yielding an `AsyncSession`
-- `init_db()`: creates all tables from `Base.metadata`
+- `init_db()`: creates all tables from `Base.metadata`, then ensures settings + seeds default foods
+
+Seed data:
+
+- `app/seed_data.py`: small starter list used by `seed_default_foods()`
 
 Models live under `app/models/` and inherit from `app.database.Base`. The first model is:
 
