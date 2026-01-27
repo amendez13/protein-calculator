@@ -76,6 +76,7 @@ Routes are grouped under `app/routes/` and call into `app/services/` for busines
 - `app/services/summary_service.py`: daily totals and goal/percentage calculations
 - `app/routes/settings.py`: `/api/settings` endpoints (get/update goal)
 - `app/services/settings_service.py`: get-or-create and update logic for settings
+- Simulation endpoints live under `/api/entries/simulation` and `/api/summary/simulation`.
 
 ### Component B
 

@@ -36,7 +36,17 @@ async def get_entries(db: AsyncSession, *, entry_date: Date | None = None) -> li
     return list(result.scalars().all())
 
 
-async def create_entry(db: AsyncSession, entry: ProteinEntryCreate) -> ProteinEntry:
+async def get_simulation_entries(db: AsyncSession) -> list[ProteinEntry]:
+    result = await db.execute(
+        select(ProteinEntry)
+        .options(selectinload(ProteinEntry.food_item))
+        .where(ProteinEntry.is_simulation.is_(True))
+        .order_by(ProteinEntry.logged_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def _create_entry(db: AsyncSession, entry: ProteinEntryCreate, *, is_simulation: bool) -> ProteinEntry:
     food_item = await db.get(FoodItem, entry.food_item_id)
     if food_item is None:
         raise LookupError("Food item not found")
@@ -51,13 +61,21 @@ async def create_entry(db: AsyncSession, entry: ProteinEntryCreate) -> ProteinEn
         protein_amount=protein_amount,
         logged_at=now,
         date=now.date(),
-        is_simulation=False,
+        is_simulation=is_simulation,
         created_at=now,
     )
     db_entry.food_item = food_item
     db.add(db_entry)
     await db.commit()
     return db_entry
+
+
+async def create_entry(db: AsyncSession, entry: ProteinEntryCreate) -> ProteinEntry:
+    return await _create_entry(db, entry, is_simulation=False)
+
+
+async def create_simulation_entry(db: AsyncSession, entry: ProteinEntryCreate) -> ProteinEntry:
+    return await _create_entry(db, entry, is_simulation=True)
 
 
 async def delete_entry(db: AsyncSession, entry_id: int) -> bool:
@@ -68,3 +86,12 @@ async def delete_entry(db: AsyncSession, entry_id: int) -> bool:
     await db.delete(entry)
     await db.commit()
     return True
+
+
+async def clear_simulation_entries(db: AsyncSession) -> int:
+    result = await db.execute(select(ProteinEntry).where(ProteinEntry.is_simulation.is_(True)))
+    entries = list(result.scalars().all())
+    for entry in entries:
+        await db.delete(entry)
+    await db.commit()
+    return len(entries)
