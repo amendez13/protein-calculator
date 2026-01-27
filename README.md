@@ -1,16 +1,19 @@
 # protein-calculator
 
-![CI](https://github.com/alex3m6/protein-calculator/workflows/CI/badge.svg)
+![CI](https://github.com/amendez13/protein-calculator/workflows/CI/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)
 
-A FastAPI webapp that helps users log and count protein intake throughout the day
+A FastAPI web app that helps you log and track protein intake throughout the day.
 
 ## Features
 
-- Feature 1: Description
-- Feature 2: Description
-- Feature 3: Description
+- Food database (seeded on first run)
+- Log daily protein entries (grams or servings)
+- Progress wheel (current vs goal)
+- Simulation mode for “what-if” planning
+- History view (daily totals)
+- Settings: update daily protein goal, add foods
 
 ## Quick Start
 
@@ -23,7 +26,7 @@ A FastAPI webapp that helps users log and count protein intake throughout the da
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/alex3m6/protein-calculator.git
+git clone https://github.com/amendez13/protein-calculator.git
 cd protein-calculator
 ```
 
@@ -39,31 +42,22 @@ source venv/bin/activate  # On macOS/Linux
 pip install -r requirements.txt
 ```
 
-4. Configure the application:
+4. Run the app:
 ```bash
-cp config/config.example.yaml config/config.yaml
-# Edit config/config.yaml with your settings
+uvicorn app.main:app --reload
 ```
 
 ### Usage
 
-```bash
-# Run the application
-python -m app.main
-```
+- App UI: `http://localhost:8000/`
+- API docs (Swagger): `http://localhost:8000/docs`
 
 ## Configuration
 
-Configuration is stored in `config/config.yaml`. See `config/config.example.yaml` for all available options.
+Configuration is via environment variables:
 
-```yaml
-# Example configuration
-app:
-  debug: false
-  log_level: INFO
-
-# Add your configuration sections here
-```
+- `PROTEIN_DATABASE_URL` (default: `sqlite+aiosqlite:///./protein.db`)
+- `PROTEIN_DEBUG` (default: `false`, enables SQLAlchemy echo)
 
 ## Project Structure
 
@@ -131,6 +125,8 @@ See [docs/CI.md](docs/CI.md) for details.
 - [Documentation Index](docs/INDEX.md) - All documentation
 - [Setup Guide](docs/SETUP.md) - Installation and configuration
 - [CI Documentation](docs/CI.md) - CI/CD pipeline details
+- [API Reference](docs/API.md) - Endpoints and examples
+- [Deployment Guide](docs/DEPLOYMENT.md) - systemd/nginx/Tailscale notes
 
 ## Contributing
 

@@ -1,151 +1,126 @@
-# Architecture Documentation
+# Architecture
 
-This document describes the technical architecture of protein-calculator.
+This document describes the technical architecture of `protein-calculator`.
 
-## Overview
-
-Protein Calculator is a FastAPI single-user web app with:
-
-- An async SQLAlchemy + SQLite database
-- A REST API under `/api/*`
-- A static single-page frontend served from `app/static/`
-
-This document evolves as features land; see each PR for incremental design notes.
-
-## Configuration
-
-Runtime config is provided via `app/config.py` using `pydantic-settings`.
-
-- `PROTEIN_DATABASE_URL` (default: `sqlite+aiosqlite:///./protein.db`)
-- `PROTEIN_DEBUG` (default: `false`, enables SQLAlchemy echo)
-
-## Database
-
-`app/database.py` owns engine/session lifecycle:
-
-- `get_engine()`: cached async engine
-- `get_sessionmaker()`: cached session factory (`async_sessionmaker`)
-- `get_db()`: FastAPI dependency yielding an `AsyncSession`
-- `init_db()`: creates all tables from `Base.metadata`, then ensures settings + seeds default foods
-
-Seed data:
-
-- `app/seed_data.py`: small starter list used by `seed_default_foods()`
-
-Models live under `app/models/` and inherit from `app.database.Base`. The first model is:
-
-- `FoodItem` (`food_items`): protein content per 100g plus optional serving metadata
-- `ProteinEntry` (`protein_entries`): logged intake events (actual + simulation)
-- `UserSettings` (`user_settings`): single-row config (protein goal)
-
-## System Components
-
-### Component Diagram
+## System Overview
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│   Component A   │────▶│   Component B   │
-└─────────────────┘     └─────────────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│   Component C   │     │   Component D   │
-└─────────────────┘     └─────────────────┘
+┌───────────────┐       ┌─────────────────────────────┐
+│   Browser     │       │            FastAPI           │
+│  (SPA UI)     │──────▶│  app/main.py (routers + UI)  │
+└───────┬───────┘       └──────────────┬──────────────┘
+        │                               │
+        │  /static/*                    │ /api/*
+        │                               ▼
+        │                      ┌───────────────────────┐
+        │                      │   Routes (app/routes) │
+        │                      └──────────┬────────────┘
+        │                                 ▼
+        │                      ┌───────────────────────┐
+        │                      │ Services (app/services)│
+        │                      └──────────┬────────────┘
+        │                                 ▼
+        │                      ┌───────────────────────┐
+        └──────────────────────│ Async SQLAlchemy +     │
+                               │ SQLite (protein.db)    │
+                               └───────────────────────┘
 ```
 
-### Component A
+## Key Modules
 
-**Purpose**: [Description]
+- `app/main.py`: FastAPI app creation, lifespan DB init, static mounting (`/static`) and root (`/`).
+- `app/config.py`: environment-driven settings (`PROTEIN_DATABASE_URL`, `PROTEIN_DEBUG`).
+- `app/database.py`: engine/session factory, `get_db()` dependency, `init_db()` table creation + seed + default settings.
+- `app/models/*`: SQLAlchemy models (`FoodItem`, `ProteinEntry`, `UserSettings`).
+- `app/schemas/*`: Pydantic request/response models.
+- `app/routes/*`: API endpoints grouped by domain.
+- `app/services/*`: business logic and DB queries.
+- `app/static/*`: single-page frontend (HTML/CSS/JS).
 
-**Responsibilities**:
-- Responsibility 1
-- Responsibility 2
+## Database Schema
 
-**Key Files**:
-- `app/component_a.py`
+### ER Diagram (high level)
 
-## API Layer
+```
+FoodItem (food_items) 1 ──── * ProteinEntry (protein_entries)
 
-Routes are grouped under `app/routes/` and call into `app/services/` for business logic.
+UserSettings (user_settings)  (single row, id=1)
+```
 
-- `app/routes/foods.py`: `/api/foods` CRUD endpoints
-- `app/services/food_service.py`: DB queries and mutations for food items
-- `app/routes/entries.py`: `/api/entries` endpoints for logging intake
-- `app/services/entry_service.py`: protein calculation + entry CRUD
-- `app/routes/summary.py`: `/api/summary` endpoints (today + history)
-- `app/services/summary_service.py`: daily totals and goal/percentage calculations
-- `app/routes/settings.py`: `/api/settings` endpoints (get/update goal)
-- `app/services/settings_service.py`: get-or-create and update logic for settings
-- Simulation endpoints live under `/api/entries/simulation` and `/api/summary/simulation`.
+### Tables
 
-## Frontend
+**`food_items`**
+- `id` (PK)
+- `name` (unique)
+- `protein_per_100g` (float)
+- `serving_size_grams` (nullable float)
+- `serving_name` (nullable string)
+- `category` (nullable string)
+- `created_at` (datetime)
 
-The frontend is a static single-page app:
+**`protein_entries`**
+- `id` (PK)
+- `food_item_id` (FK → `food_items.id`)
+- `quantity` (float)
+- `quantity_type` (`grams` | `servings`)
+- `protein_amount` (float; stored as computed at write time)
+- `logged_at` (datetime)
+- `date` (date; indexed for daily summaries)
+- `is_simulation` (bool; simulation/planning entries)
+- `created_at` (datetime)
 
-- Mounted at `/static` (CSS/JS/assets) via `fastapi.staticfiles.StaticFiles`
-- `/` serves `app/static/index.html`
-- `app/static/js/app.js` owns client-side state and view rendering (API wiring lands incrementally)
+**`user_settings`**
+- `id` (PK; expected `1`)
+- `daily_protein_goal` (float)
+- `updated_at` (datetime)
 
-Current frontend integrations:
+## API Surface
 
-- Food search uses `GET /api/foods/?search=...`
-- Logging uses `POST /api/entries/`
-- Wheel/goal uses `GET /api/summary/today`
-- Simulation view uses `GET /api/summary/simulation` and `GET/POST/DELETE /api/entries/simulation`
-- History view uses `GET /api/summary/history?days=...`
-- Settings view uses `GET/PUT /api/settings/`, and food admin uses `GET /api/foods/` + `POST /api/foods/`
+The API is mounted under `/api/*`. See `docs/API.md` for the full reference, or browse the interactive Swagger UI at `/docs`.
 
-### Component B
+Key groups:
+- Foods: `app/routes/foods.py`
+- Entries (+ simulation): `app/routes/entries.py`
+- Summary/history (+ simulation): `app/routes/summary.py`
+- Settings: `app/routes/settings.py`
 
-**Purpose**: [Description]
+## Frontend Structure
 
-**Responsibilities**:
-- Responsibility 1
-- Responsibility 2
+The UI is a static SPA served by FastAPI:
 
-**Key Files**:
-- `app/component_b.py`
+- `/` → `app/static/index.html`
+- `/static/css/styles.css` → styling, including the progress wheel
+- `/static/js/app.js` → client-side state, tab navigation, and API calls
 
 ## Data Flow
 
-1. Step 1: [Description]
-2. Step 2: [Description]
-3. Step 3: [Description]
+### Log an entry (Today)
+
+1. UI searches foods: `GET /api/foods/?search=...`
+2. UI submits log form: `POST /api/entries/`
+3. Server:
+   - loads the chosen `FoodItem`
+   - computes `protein_amount` (grams vs servings)
+   - persists a `ProteinEntry` (non-simulation)
+4. UI refreshes:
+   - `GET /api/entries/today` to render today’s list
+   - `GET /api/summary/today` to update wheel/goal
+
+### Simulation (planning)
+
+1. UI adds planned items via `POST /api/entries/simulation`
+2. UI refreshes `GET /api/entries/simulation` and `GET /api/summary/simulation`
+3. “Clear planned” uses `DELETE /api/entries/simulation`
 
 ## Design Decisions
 
-### Decision 1: [Title]
+- Single-user app: settings stored in one row (`user_settings.id=1`).
+- Store computed `protein_amount` on `ProteinEntry` to simplify summaries and reduce repeated calculations.
+- Treat simulations as flagged `ProteinEntry` rows (`is_simulation=true`) to reuse the same schema and joins.
+- Seed data only runs when `food_items` is empty (first run behavior).
 
-**Context**: [Why this decision was needed]
+## Testing
 
-**Decision**: [What was decided]
-
-**Consequences**:
-- Pro: [Positive consequence]
-- Con: [Negative consequence]
-
-### Decision 2: [Title]
-
-**Context**: [Why this decision was needed]
-
-**Decision**: [What was decided]
-
-**Consequences**:
-- Pro: [Positive consequence]
-- Con: [Negative consequence]
-
-## Performance Considerations
-
-- [Consideration 1]
-- [Consideration 2]
-
-## Security Considerations
-
-- [Security measure 1]
-- [Security measure 2]
-
-## Future Enhancements
-
-- [ ] Enhancement 1
-- [ ] Enhancement 2
-- [ ] Enhancement 3
+Tests live in `tests/` and include:
+- Integration tests hitting the ASGI app via `httpx` transport
+- Service-layer smoke coverage to keep CI coverage stable
