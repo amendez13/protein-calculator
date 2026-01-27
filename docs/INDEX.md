@@ -7,6 +7,8 @@ Welcome to the protein-calculator documentation. This index provides easy access
 **For Users:**
 - [Getting Started](#getting-started) - Start here if you're new
 - [Setup Guide](#setup-guides) - Configure your environment
+- [API Reference](#api-reference) - Endpoints and examples
+- [Deployment](#deployment) - Running on a server
 
 **For Developers:**
 - [Architecture](#architecture) - Technical design and implementation details
@@ -41,10 +43,25 @@ Welcome to the protein-calculator documentation. This index provides easy access
 
 **[ARCHITECTURE.md](ARCHITECTURE.md)**
 - System architecture overview
-- Component design
-- Design decisions and trade-offs
-- Performance considerations
-- Security implications
+- Database schema and data flow
+- Design decisions
+
+---
+
+## API Reference
+
+**[API.md](API.md)**
+- Endpoint reference with request/response examples
+- Interactive docs available at `/docs`
+
+---
+
+## Deployment
+
+**[DEPLOYMENT.md](DEPLOYMENT.md)**
+- VPS deployment notes
+- systemd and nginx examples
+- Tailscale optional setup
 
 ---
 
@@ -69,17 +86,7 @@ Welcome to the protein-calculator documentation. This index provides easy access
 
 ## Project Status
 
-**Current Phase:** [Current development phase]
-- [Feature 1]
-- [Feature 2]
-
-**Next Phase:** [Upcoming phase]
-- [Planned feature 1]
-- [Planned feature 2]
-
-**Future:** [Long-term plans]
-- [Future feature 1]
-- [Future feature 2]
+**Status:** Implemented (API + SPA)
 
 ---
 
@@ -92,6 +99,8 @@ Welcome to the protein-calculator documentation. This index provides easy access
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical architecture and design | Developers |
 | [CI.md](CI.md) | CI/CD pipeline and development workflow | Developers |
 | [CLAUDE.md](../CLAUDE.md) | AI assistant guidance | Claude Code |
+| [API.md](API.md) | Endpoint reference | Developers |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Deployment guide | Operators |
 
 ---
 

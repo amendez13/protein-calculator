@@ -45,13 +45,9 @@ pip install -r requirements-dev.txt
 ### 4. Configure the Application
 
 ```bash
-# Copy example configuration
-cp config/config.example.yaml config/config.yaml
-
-# Edit configuration with your settings
-# On macOS/Linux:
-nano config/config.yaml
-# Or use your preferred editor
+# Optional: configure via environment variables
+export PROTEIN_DATABASE_URL="sqlite+aiosqlite:///./protein.db"
+export PROTEIN_DEBUG="false"
 ```
 
 ### 5. Verify Installation
@@ -61,23 +57,10 @@ nano config/config.yaml
 pytest
 
 # Or run the application
-python -m app.main --help
+uvicorn app.main:app --reload
 ```
 
 ## Configuration
-
-### config/config.yaml
-
-The main configuration file. See `config/config.example.yaml` for all available options.
-
-```yaml
-# Application settings
-app:
-  debug: false
-  log_level: INFO
-
-# Add your configuration sections
-```
 
 ### Environment Variables
 
@@ -85,8 +68,8 @@ You can also configure the application using environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `APP_DEBUG` | Enable debug mode | `false` |
-| `APP_LOG_LEVEL` | Logging level | `INFO` |
+| `PROTEIN_DATABASE_URL` | Database URL | `sqlite+aiosqlite:///./protein.db` |
+| `PROTEIN_DEBUG` | Enable SQLAlchemy echo | `false` |
 
 ## Development Setup
 
@@ -149,9 +132,11 @@ pip install -r requirements.txt
 pre-commit install
 ```
 
-**Configuration file not found**
+**Database path / permissions**
+
+Set a writable SQLite path via:
 ```bash
-cp config/config.example.yaml config/config.yaml
+export PROTEIN_DATABASE_URL="sqlite+aiosqlite:////absolute/path/to/protein.db"
 ```
 
 ### Getting Help
