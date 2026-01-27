@@ -72,6 +72,8 @@ Routes are grouped under `app/routes/` and call into `app/services/` for busines
 - `app/services/food_service.py`: DB queries and mutations for food items
 - `app/routes/entries.py`: `/api/entries` endpoints for logging intake
 - `app/services/entry_service.py`: protein calculation + entry CRUD
+- `app/routes/summary.py`: `/api/summary` endpoints (today + history)
+- `app/services/summary_service.py`: daily totals and goal/percentage calculations
 
 ### Component B
 

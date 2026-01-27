@@ -21,9 +21,11 @@ def create_app() -> FastAPI:
 
     from app.routes.entries import router as entries_router
     from app.routes.foods import router as foods_router
+    from app.routes.summary import router as summary_router
 
     application.include_router(entries_router)
     application.include_router(foods_router)
+    application.include_router(summary_router)
     return application
 
 
