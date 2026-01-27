@@ -70,6 +70,8 @@ Routes are grouped under `app/routes/` and call into `app/services/` for busines
 
 - `app/routes/foods.py`: `/api/foods` CRUD endpoints
 - `app/services/food_service.py`: DB queries and mutations for food items
+- `app/routes/entries.py`: `/api/entries` endpoints for logging intake
+- `app/services/entry_service.py`: protein calculation + entry CRUD
 
 ### Component B
 
