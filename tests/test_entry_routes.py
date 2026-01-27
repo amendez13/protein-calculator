@@ -66,3 +66,9 @@ async def test_entries_list_and_delete(api_client: httpx.AsyncClient) -> None:
 
     missing = await api_client.get(f"/api/entries/{entry_id}")
     assert missing.status_code in (404, 405)
+
+
+@pytest.mark.anyio
+async def test_delete_entry_404(api_client: httpx.AsyncClient) -> None:
+    response = await api_client.delete("/api/entries/999999")
+    assert response.status_code == 404

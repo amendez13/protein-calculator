@@ -37,3 +37,20 @@ async def test_history_includes_today(api_client: httpx.AsyncClient) -> None:
     items = history.json()
     assert len(items) == 3
     assert items[0]["date"] == date.today().isoformat()
+
+
+@pytest.mark.anyio
+async def test_today_summary_excludes_simulation_entries(api_client: httpx.AsyncClient) -> None:
+    foods = await api_client.get("/api/foods/", params={"search": "Chicken Breast"})
+    chicken_id = foods.json()[0]["id"]
+
+    # Simulation entry should not count toward /today summary.
+    sim = await api_client.post(
+        "/api/entries/simulation",
+        json={"food_item_id": chicken_id, "quantity": 100.0, "quantity_type": "grams"},
+    )
+    assert sim.status_code == 201
+
+    summary = await api_client.get("/api/summary/today")
+    assert summary.status_code == 200
+    assert summary.json()["total_protein"] == 0.0
