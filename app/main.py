@@ -17,7 +17,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    return FastAPI(title="Protein Calculator", lifespan=lifespan)
+    application = FastAPI(title="Protein Calculator", lifespan=lifespan)
+
+    from app.routes.foods import router as foods_router
+
+    application.include_router(foods_router)
+    return application
 
 
 app = create_app()
