@@ -169,12 +169,71 @@
 
           <section id="view-history" class="view" data-view="history" hidden>
             <h2 class="view__title">History</h2>
-            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+            <div id="history-list" class="history-list"></div>
           </section>
 
           <section id="view-settings" class="view" data-view="settings" hidden>
             <h2 class="view__title">Settings</h2>
-            <p class="view__placeholder">UI components will be added in follow-up issues.</p>
+
+            <section class="setting-group" aria-label="Daily protein goal">
+              <h3 class="section-title">Daily Protein Goal (grams)</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label" for="goal-input">Goal</label>
+                  <input type="number" id="goal-input" min="1" max="500" step="1" />
+                </div>
+                <div class="form-group">
+                  <label class="label" for="save-goal">&nbsp;</label>
+                  <button id="save-goal" class="button button--primary" type="button">Save</button>
+                </div>
+              </div>
+              <div id="settings-message" class="message" role="status" aria-live="polite"></div>
+            </section>
+
+            <section class="setting-group" aria-label="Food database">
+              <h3 class="section-title">Food Database</h3>
+              <div class="form-group">
+                <label class="label" for="foods-search">Search</label>
+                <input type="text" id="foods-search" placeholder="Search foods..." autocomplete="off" />
+              </div>
+
+              <div id="foods-list" class="foods-list"></div>
+
+              <details class="add-food">
+                <summary class="button">Add New Food</summary>
+                <form id="add-food-form" class="log-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="label" for="add-food-name">Name</label>
+                      <input type="text" id="add-food-name" placeholder="e.g. Lentils" />
+                    </div>
+                    <div class="form-group">
+                      <label class="label" for="add-food-protein">Protein / 100g</label>
+                      <input type="number" id="add-food-protein" placeholder="0" step="0.1" min="0" />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="label" for="add-food-category">Category (optional)</label>
+                      <input type="text" id="add-food-category" placeholder="e.g. plant" />
+                    </div>
+                    <div class="form-group">
+                      <label class="label" for="add-food-serving-grams">Serving grams (optional)</label>
+                      <input type="number" id="add-food-serving-grams" placeholder="0" step="0.1" min="0" />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="label" for="add-food-serving-name">Serving name (optional)</label>
+                    <input type="text" id="add-food-serving-name" placeholder="e.g. cup" />
+                  </div>
+
+                  <button type="submit" class="button button--primary">Create Food</button>
+                  <div id="add-food-message" class="message" role="status" aria-live="polite"></div>
+                </form>
+              </details>
+            </section>
           </section>
         </section>
       </main>

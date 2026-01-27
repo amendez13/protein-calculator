@@ -76,6 +76,46 @@ const API = {
     const res = await fetch("/api/entries/simulation", { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to clear simulation");
   },
+
+  async getHistory(days = 14) {
+    const url = new URL("/api/summary/history", window.location.origin);
+    url.searchParams.set("days", String(days));
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load history");
+    return res.json();
+  },
+
+  async getSettings() {
+    const res = await fetch("/api/settings/");
+    if (!res.ok) throw new Error("Failed to load settings");
+    return res.json();
+  },
+
+  async updateSettings(goal) {
+    const res = await fetch("/api/settings/", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ daily_protein_goal: goal }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail || "Failed to update settings");
+    }
+    return res.json();
+  },
+
+  async createFood(payload) {
+    const res = await fetch("/api/foods/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail || "Failed to create food");
+    }
+    return res.json();
+  },
 };
 
 const App = {
@@ -93,6 +133,8 @@ const App = {
     this.bindEntriesList();
     this.bindSimulationForm();
     this.bindClearSimulation();
+    this.bindHistoryView();
+    this.bindSettingsView();
     this.refreshSummary();
     this.loadTodayEntries();
     this.renderViews();
@@ -128,6 +170,13 @@ const App = {
     this.renderViews();
     if (tabName === "simulation") {
       this.loadSimulation();
+    }
+    if (tabName === "history") {
+      this.loadHistory();
+    }
+    if (tabName === "settings") {
+      this.loadSettings();
+      this.loadFoodsAdmin();
     }
   },
 
@@ -547,6 +596,182 @@ const App = {
         `;
       })
       .join("");
+  },
+
+  bindHistoryView() {
+    // No-op for now; reserved for future interactions (date range, etc).
+  },
+
+  async loadHistory() {
+    try {
+      const items = await API.getHistory(14);
+      this.renderHistory(Array.isArray(items) ? items : []);
+    } catch {
+      this.renderHistory([]);
+    }
+  },
+
+  renderHistory(items) {
+    const list = document.getElementById("history-list");
+    if (!list) return;
+
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-state">No history yet.</div>';
+      return;
+    }
+
+    const fmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+    list.innerHTML = items
+      .map((item) => {
+        const day = new Date(String(item.date));
+        const total = Number(item.total_protein ?? 0);
+        const goal = Number(item.goal ?? 150);
+        const percent = goal > 0 ? Math.max(0, Math.min(100, (total / goal) * 100)) : 0;
+        return `
+          <div class="history-day">
+            <span class="history-day__date">${fmt.format(day)}</span>
+            <div class="mini-progress" style="--progress: ${percent}%"></div>
+            <span class="history-day__total">${total}g / ${goal}g</span>
+          </div>
+        `;
+      })
+      .join("");
+  },
+
+  bindSettingsView() {
+    const saveGoal = document.getElementById("save-goal");
+    const goalInput = document.getElementById("goal-input");
+    const settingsMessage = document.getElementById("settings-message");
+    const foodsSearch = document.getElementById("foods-search");
+    const addFoodForm = document.getElementById("add-food-form");
+    const addFoodMessage = document.getElementById("add-food-message");
+
+    if (saveGoal && goalInput && settingsMessage) {
+      const showSettingsMessage = (text, kind) => {
+        settingsMessage.classList.toggle("is-error", kind === "error");
+        settingsMessage.classList.toggle("is-success", kind === "success");
+        settingsMessage.textContent = text;
+      };
+
+      saveGoal.addEventListener("click", async () => {
+        showSettingsMessage("", "none");
+        const goal = Number(goalInput.value);
+        if (!Number.isFinite(goal) || goal < 1 || goal > 500) {
+          showSettingsMessage("Goal must be between 1 and 500.", "error");
+          return;
+        }
+
+        saveGoal.disabled = true;
+        try {
+          await API.updateSettings(goal);
+          showSettingsMessage("Saved.", "success");
+          await this.refreshSummary();
+          if (this.state.currentTab === "history") await this.loadHistory();
+          if (this.state.currentTab === "simulation") await this.loadSimulation();
+        } catch (err) {
+          showSettingsMessage(err instanceof Error ? err.message : "Failed to save.", "error");
+        } finally {
+          saveGoal.disabled = false;
+        }
+      });
+    }
+
+    if (foodsSearch) {
+      let timer = null;
+      foodsSearch.addEventListener("input", () => {
+        if (timer) window.clearTimeout(timer);
+        timer = window.setTimeout(() => this.loadFoodsAdmin(foodsSearch.value.trim()), 200);
+      });
+    }
+
+    if (addFoodForm && addFoodMessage) {
+      const showAddFoodMessage = (text, kind) => {
+        addFoodMessage.classList.toggle("is-error", kind === "error");
+        addFoodMessage.classList.toggle("is-success", kind === "success");
+        addFoodMessage.textContent = text;
+      };
+
+      addFoodForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showAddFoodMessage("", "none");
+
+        const name = document.getElementById("add-food-name")?.value?.trim() || "";
+        const proteinPer100g = Number(document.getElementById("add-food-protein")?.value);
+        const category = document.getElementById("add-food-category")?.value?.trim() || null;
+        const servingSize = Number(document.getElementById("add-food-serving-grams")?.value);
+        const servingName = document.getElementById("add-food-serving-name")?.value?.trim() || null;
+
+        if (!name) {
+          showAddFoodMessage("Name is required.", "error");
+          return;
+        }
+        if (!Number.isFinite(proteinPer100g) || proteinPer100g < 0) {
+          showAddFoodMessage("Protein per 100g must be 0 or greater.", "error");
+          return;
+        }
+
+        const payload = {
+          name,
+          protein_per_100g: proteinPer100g,
+          category: category || undefined,
+          serving_size_grams: Number.isFinite(servingSize) && servingSize > 0 ? servingSize : undefined,
+          serving_name: servingName || undefined,
+        };
+
+        const button = addFoodForm.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+
+        try {
+          await API.createFood(payload);
+          showAddFoodMessage("Food created.", "success");
+          addFoodForm.reset();
+          await this.loadFoodsAdmin(foodsSearch?.value?.trim() || "");
+        } catch (err) {
+          showAddFoodMessage(err instanceof Error ? err.message : "Failed to create food.", "error");
+        } finally {
+          if (button) button.disabled = false;
+        }
+      });
+    }
+  },
+
+  async loadSettings() {
+    const goalInput = document.getElementById("goal-input");
+    if (!goalInput) return;
+    try {
+      const settings = await API.getSettings();
+      goalInput.value = String(Number(settings.daily_protein_goal ?? this.state.goal ?? 150));
+    } catch {
+      goalInput.value = String(this.state.goal ?? 150);
+    }
+  },
+
+  async loadFoodsAdmin(search = "") {
+    const list = document.getElementById("foods-list");
+    if (!list) return;
+
+    try {
+      const foods = await API.getFoods(search);
+      if (!foods.length) {
+        list.innerHTML = '<div class="empty-state">No foods found.</div>';
+        return;
+      }
+      list.innerHTML = foods
+        .slice(0, 50)
+        .map((food) => {
+          const meta = `${food.protein_per_100g}g/100g${food.category ? ` • ${food.category}` : ""}`;
+          return `
+            <div class="food-row">
+              <div class="food-row__name">${food.name}</div>
+              <div class="food-row__meta">${meta}</div>
+            </div>
+          `;
+        })
+        .join("");
+    } catch {
+      list.innerHTML = '<div class="empty-state">Failed to load foods.</div>';
+    }
   },
 
   updateWheel(percentage) {
