@@ -1,0 +1,9 @@
+---
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart protein-calculator
+  ansible.builtin.systemd:
+    name: "{{ protein_calculator_service_name }}"
+    state: restarted

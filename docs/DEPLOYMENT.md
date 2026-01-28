@@ -8,6 +8,19 @@ This is a minimal guide for deploying `protein-calculator` on a Linux VPS. It as
 - Python 3.10+
 - A reverse proxy (optional but recommended)
 
+## Install and Run (Ansible)
+
+This repo includes Ansible playbooks under `ansible/`.
+
+Quick start:
+
+```bash
+cp ansible/inventory.example.ini ansible/inventory.ini
+ansible-playbook -i ansible/inventory.ini ansible/site.yml
+```
+
+To enable nginx, set `protein_calculator_enable_nginx=true` in your inventory (and configure `protein_calculator_nginx_server_name`).
+
 ## Install and Run (manual)
 
 ```bash

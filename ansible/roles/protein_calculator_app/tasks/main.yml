@@ -1,0 +1,96 @@
+---
+- name: Ensure Debian/Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.os_family == "Debian"
+    fail_msg: "This playbook currently supports Debian/Ubuntu hosts only."
+
+- name: Install OS packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - python3
+      - python3-venv
+      - python3-pip
+    state: present
+    update_cache: true
+
+- name: Ensure app group
+  ansible.builtin.group:
+    name: "{{ protein_calculator_group }}"
+    state: present
+
+- name: Ensure app user
+  ansible.builtin.user:
+    name: "{{ protein_calculator_user }}"
+    group: "{{ protein_calculator_group }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Ensure app directory
+  ansible.builtin.file:
+    path: "{{ protein_calculator_app_dir }}"
+    state: directory
+    owner: "{{ protein_calculator_user }}"
+    group: "{{ protein_calculator_group }}"
+    mode: "0755"
+
+- name: Ensure state directory
+  ansible.builtin.file:
+    path: "{{ protein_calculator_state_dir }}"
+    state: directory
+    owner: "{{ protein_calculator_user }}"
+    group: "{{ protein_calculator_group }}"
+    mode: "0755"
+
+- name: Checkout repo
+  become: true
+  become_user: "{{ protein_calculator_user }}"
+  ansible.builtin.git:
+    repo: "{{ protein_calculator_repo_url }}"
+    dest: "{{ protein_calculator_app_dir }}"
+    version: "{{ protein_calculator_repo_version }}"
+    update: true
+
+- name: Create virtualenv
+  become: true
+  become_user: "{{ protein_calculator_user }}"
+  ansible.builtin.command:
+    cmd: "{{ protein_calculator_python }} -m venv {{ protein_calculator_venv_dir }}"
+    creates: "{{ protein_calculator_venv_dir }}/bin/activate"
+
+- name: Install Python requirements
+  become: true
+  become_user: "{{ protein_calculator_user }}"
+  ansible.builtin.pip:
+    requirements: "{{ protein_calculator_app_dir }}/requirements.txt"
+    virtualenv: "{{ protein_calculator_venv_dir }}"
+    virtualenv_command: "{{ protein_calculator_python }} -m venv"
+
+- name: Write env file
+  ansible.builtin.template:
+    src: protein-calculator.env.j2
+    dest: "{{ protein_calculator_env_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart protein-calculator
+
+- name: Install systemd unit
+  ansible.builtin.template:
+    src: protein-calculator.service.j2
+    dest: "/etc/systemd/system/{{ protein_calculator_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - systemd daemon-reload
+    - restart protein-calculator
+
+- name: Enable and start service
+  ansible.builtin.systemd:
+    name: "{{ protein_calculator_service_name }}"
+    enabled: true
+    state: started

@@ -1,0 +1,46 @@
+---
+- name: Ensure Debian/Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.os_family == "Debian"
+    fail_msg: "This role currently supports Debian/Ubuntu hosts only."
+
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Install site config
+  ansible.builtin.template:
+    src: protein-calculator.nginx.conf.j2
+    dest: /etc/nginx/sites-available/protein-calculator.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Enable site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/protein-calculator.conf
+    dest: /etc/nginx/sites-enabled/protein-calculator.conf
+    state: link
+  notify: reload nginx
+
+- name: Optionally disable default site
+  when: protein_calculator_nginx_disable_default_site | bool
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Validate nginx config
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Ensure nginx is running
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
