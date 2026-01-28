@@ -75,7 +75,7 @@
     dest: "{{ protein_calculator_env_file }}"
     owner: root
     group: root
-    mode: "0644"
+    mode: "0640"
   notify: restart protein-calculator
 
 - name: Install systemd unit
