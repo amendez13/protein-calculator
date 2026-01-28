@@ -77,6 +77,11 @@ const API = {
     if (!res.ok) throw new Error("Failed to clear simulation");
   },
 
+  async deleteSimulationEntry(entryId) {
+    const res = await fetch(`/api/entries/simulation/${entryId}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete planned entry");
+  },
+
   async getHistory(days = 14) {
     const url = new URL("/api/summary/history", window.location.origin);
     url.searchParams.set("days", String(days));
@@ -132,6 +137,7 @@ const App = {
     this.bindLogForm();
     this.bindEntriesList();
     this.bindSimulationForm();
+    this.bindSimulationEntriesList();
     this.bindClearSimulation();
     this.bindHistoryView();
     this.bindSettingsView();
@@ -381,6 +387,30 @@ const App = {
     await this.refreshSummary();
   },
 
+  bindSimulationEntriesList() {
+    const list = document.getElementById("simulation-entries");
+    if (!list) return;
+
+    list.addEventListener("click", async (e) => {
+      const button = e.target.closest(".delete-btn");
+      if (!button) return;
+      const id = Number(button.getAttribute("data-id"));
+      if (!id) return;
+
+      button.disabled = true;
+      try {
+        await this.deleteSimulationEntry(id);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  },
+
+  async deleteSimulationEntry(entryId) {
+    await API.deleteSimulationEntry(entryId);
+    await this.loadSimulation();
+  },
+
   bindSimulationForm() {
     const form = document.getElementById("simulation-form");
     const foodSearch = document.getElementById("sim-food-search");
@@ -588,10 +618,11 @@ const App = {
         const qty = formatQuantity(entry);
         const protein = `${Number(entry.protein_amount ?? 0)}g`;
         return `
-          <div class="entry-item entry-item--no-actions">
+          <div class="entry-item" data-id="${entry.id}">
             <div class="entry-item__name">${name}</div>
             <div class="entry-item__meta">${qty}</div>
             <div class="entry-item__protein">${protein}</div>
+            <button class="delete-btn" type="button" data-id="${entry.id}" aria-label="Remove planned item">×</button>
           </div>
         `;
       })

@@ -14,6 +14,7 @@ from app.services.entry_service import (
     create_entry,
     create_simulation_entry,
     delete_entry,
+    delete_simulation_entry,
     get_entries,
     get_simulation_entries,
 )
@@ -63,6 +64,13 @@ async def create_simulation(entry: ProteinEntryCreate, db: AsyncSession = Depend
 @router.delete("/simulation", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_simulation(db: AsyncSession = Depends(get_db)) -> None:
     await clear_simulation_entries(db)
+
+
+@router.delete("/simulation/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_simulation_entry_by_id(entry_id: int, db: AsyncSession = Depends(get_db)) -> None:
+    deleted = await delete_simulation_entry(db, entry_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Simulation entry not found")
 
 
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)

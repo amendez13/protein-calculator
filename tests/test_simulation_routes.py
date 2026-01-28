@@ -54,3 +54,48 @@ async def test_simulation_entries_and_summary(api_client: httpx.AsyncClient) -> 
     sim_list = await api_client.get("/api/entries/simulation")
     assert sim_list.status_code == 200
     assert sim_list.json() == []
+
+
+@pytest.mark.anyio
+async def test_delete_single_simulation_entry(api_client: httpx.AsyncClient) -> None:
+    egg_id = await _get_food_id_by_name(api_client, "Egg")
+
+    sim1 = await api_client.post(
+        "/api/entries/simulation",
+        json={"food_item_id": egg_id, "quantity": 1.0, "quantity_type": "servings"},
+    )
+    assert sim1.status_code == 201
+    sim2 = await api_client.post(
+        "/api/entries/simulation",
+        json={"food_item_id": egg_id, "quantity": 2.0, "quantity_type": "servings"},
+    )
+    assert sim2.status_code == 201
+
+    sim_list = await api_client.get("/api/entries/simulation")
+    assert sim_list.status_code == 200
+    ids = [int(e["id"]) for e in sim_list.json()]
+    assert len(ids) == 2
+
+    deleted = await api_client.delete(f"/api/entries/simulation/{ids[0]}")
+    assert deleted.status_code == 204
+
+    sim_list = await api_client.get("/api/entries/simulation")
+    assert sim_list.status_code == 200
+    remaining = sim_list.json()
+    assert len(remaining) == 1
+    assert int(remaining[0]["id"]) == ids[1]
+
+
+@pytest.mark.anyio
+async def test_delete_simulation_entry_rejects_actual_entry(api_client: httpx.AsyncClient) -> None:
+    chicken_id = await _get_food_id_by_name(api_client, "Chicken Breast")
+
+    actual = await api_client.post(
+        "/api/entries/",
+        json={"food_item_id": chicken_id, "quantity": 100.0, "quantity_type": "grams"},
+    )
+    assert actual.status_code == 201
+    actual_id = int(actual.json()["id"])
+
+    deleted = await api_client.delete(f"/api/entries/simulation/{actual_id}")
+    assert deleted.status_code == 404
