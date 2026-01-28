@@ -110,7 +110,8 @@ The UI is a static SPA served by FastAPI:
 
 1. UI adds planned items via `POST /api/entries/simulation`
 2. UI refreshes `GET /api/entries/simulation` and `GET /api/summary/simulation`
-3. “Clear planned” uses `DELETE /api/entries/simulation`
+3. Remove a single planned item via `DELETE /api/entries/simulation/{entry_id}`
+4. “Clear planned” uses `DELETE /api/entries/simulation`
 
 ## Design Decisions
 

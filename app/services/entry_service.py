@@ -80,7 +80,17 @@ async def create_simulation_entry(db: AsyncSession, entry: ProteinEntryCreate) -
 
 async def delete_entry(db: AsyncSession, entry_id: int) -> bool:
     entry = await db.get(ProteinEntry, entry_id)
-    if entry is None:
+    if entry is None or entry.is_simulation:
+        return False
+
+    await db.delete(entry)
+    await db.commit()
+    return True
+
+
+async def delete_simulation_entry(db: AsyncSession, entry_id: int) -> bool:
+    entry = await db.get(ProteinEntry, entry_id)
+    if entry is None or not entry.is_simulation:
         return False
 
     await db.delete(entry)

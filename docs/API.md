@@ -106,7 +106,7 @@ Response:
 
 Response:
 - `204 No Content`
-- `404 Not Found`
+- `404 Not Found` (if the entry does not exist or is a simulation entry)
 
 ## Simulation
 
@@ -141,6 +141,14 @@ Response:
 `DELETE /api/entries/simulation`
 
 Response: `204 No Content`
+
+### Delete a simulation entry
+
+`DELETE /api/entries/simulation/{entry_id}`
+
+Response:
+- `204 No Content`
+- `404 Not Found` if the entry does not exist or is not a simulation entry
 
 ## Summary
 
