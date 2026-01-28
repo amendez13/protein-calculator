@@ -59,3 +59,8 @@ tmp/
 
 # Code review files (local only)
 .code-review-*.md
+
+# Ansible (local inventories/vars)
+ansible/inventory.ini
+ansible/group_vars/all.yml
+ansible/host_vars/

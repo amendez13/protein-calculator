@@ -1,0 +1,25 @@
+---
+protein_calculator_repo_url: "https://github.com/amendez13/protein-calculator.git"
+protein_calculator_repo_version: "main"
+
+protein_calculator_user: "protein"
+protein_calculator_group: "{{ protein_calculator_user }}"
+
+protein_calculator_app_dir: "/opt/protein-calculator"
+protein_calculator_state_dir: "/var/lib/protein-calculator"
+protein_calculator_venv_dir: "{{ protein_calculator_app_dir }}/venv"
+
+protein_calculator_env_file: "/etc/protein-calculator.env"
+
+protein_calculator_uvicorn_module: "app.main:app"
+protein_calculator_bind_host: "127.0.0.1"
+protein_calculator_bind_port: 8000
+protein_calculator_uvicorn_args:
+  - "--proxy-headers"
+
+protein_calculator_database_url: "sqlite+aiosqlite:////var/lib/protein-calculator/protein.db"
+protein_calculator_debug: "false"
+protein_calculator_extra_env: {}
+
+protein_calculator_service_name: "protein-calculator"
+protein_calculator_python: "python3"

@@ -1,0 +1,8 @@
+---
+- name: Deploy protein-calculator
+  hosts: protein_calculator
+  become: true
+  roles:
+    - role: protein_calculator_app
+    - role: protein_calculator_nginx
+      when: (protein_calculator_enable_nginx | default(false)) | bool

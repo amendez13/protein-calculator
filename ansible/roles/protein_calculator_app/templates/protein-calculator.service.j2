@@ -1,0 +1,16 @@
+[Unit]
+Description=Protein Calculator (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User={{ protein_calculator_user }}
+Group={{ protein_calculator_group }}
+WorkingDirectory={{ protein_calculator_app_dir }}
+EnvironmentFile={{ protein_calculator_env_file }}
+ExecStart={{ protein_calculator_venv_dir }}/bin/uvicorn {{ protein_calculator_uvicorn_module }} --host {{ protein_calculator_bind_host }} --port {{ protein_calculator_bind_port }}{% for arg in protein_calculator_uvicorn_args %} {{ arg }}{% endfor %}
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

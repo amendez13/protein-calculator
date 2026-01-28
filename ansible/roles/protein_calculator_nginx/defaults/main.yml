@@ -1,0 +1,6 @@
+---
+protein_calculator_nginx_server_name: "_"
+protein_calculator_nginx_listen_port: 80
+protein_calculator_nginx_upstream_host: "127.0.0.1"
+protein_calculator_nginx_upstream_port: 8000
+protein_calculator_nginx_disable_default_site: false
