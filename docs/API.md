@@ -106,7 +106,7 @@ Response:
 
 Response:
 - `204 No Content`
-- `404 Not Found`
+- `404 Not Found` (if the entry does not exist or is a simulation entry)
 
 ## Simulation
 

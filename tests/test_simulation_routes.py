@@ -99,3 +99,22 @@ async def test_delete_simulation_entry_rejects_actual_entry(api_client: httpx.As
 
     deleted = await api_client.delete(f"/api/entries/simulation/{actual_id}")
     assert deleted.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_delete_actual_endpoint_rejects_simulation_entry(api_client: httpx.AsyncClient) -> None:
+    egg_id = await _get_food_id_by_name(api_client, "Egg")
+
+    sim = await api_client.post(
+        "/api/entries/simulation",
+        json={"food_item_id": egg_id, "quantity": 1.0, "quantity_type": "servings"},
+    )
+    assert sim.status_code == 201
+    sim_id = int(sim.json()["id"])
+
+    deleted = await api_client.delete(f"/api/entries/{sim_id}")
+    assert deleted.status_code == 404
+
+    sim_list = await api_client.get("/api/entries/simulation")
+    assert sim_list.status_code == 200
+    assert [int(e["id"]) for e in sim_list.json()] == [sim_id]
