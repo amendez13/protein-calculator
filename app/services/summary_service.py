@@ -44,30 +44,33 @@ def _percentage(total: float, goal: float) -> float:
     return round((total / goal) * 100.0, 1)
 
 
-async def get_today_summary(db: AsyncSession) -> dict[str, object]:
-    today = Date.today()
+async def get_day_summary(db: AsyncSession, target_date: Date) -> dict[str, object]:
     goal = await get_goal(db)
 
-    total = round(await get_daily_total(db, today), 1)
+    total = round(await get_daily_total(db, target_date), 1)
     percentage = _percentage(total, goal)
     remaining = round(max(goal - total, 0.0), 1)
 
     count_result = await db.execute(
         select(func.count())
         .select_from(ProteinEntry)
-        .where(ProteinEntry.date == today)
+        .where(ProteinEntry.date == target_date)
         .where(ProteinEntry.is_simulation.is_(False)),
     )
     entry_count = int(count_result.scalar_one())
 
     return {
-        "date": today.isoformat(),
+        "date": target_date.isoformat(),
         "total_protein": total,
         "goal": goal,
         "percentage": percentage,
         "remaining": remaining,
         "entry_count": entry_count,
     }
+
+
+async def get_today_summary(db: AsyncSession) -> dict[str, object]:
+    return await get_day_summary(db, Date.today())
 
 
 async def get_history(db: AsyncSession, *, days: int) -> list[dict[str, object]]:

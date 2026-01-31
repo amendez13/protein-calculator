@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas.protein_entry import ProteinEntryCreate, ProteinEntryResponse
+from app.schemas.protein_entry import ProteinEntryCreate, ProteinEntryResponse, ProteinEntryUpdate
 from app.services.entry_service import (
     clear_simulation_entries,
     create_entry,
@@ -17,6 +17,7 @@ from app.services.entry_service import (
     delete_simulation_entry,
     get_entries,
     get_simulation_entries,
+    update_entry,
 )
 
 router = APIRouter(prefix="/api/entries", tags=["entries"])
@@ -44,6 +45,19 @@ async def create_protein_entry(entry: ProteinEntryCreate, db: AsyncSession = Dep
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return ProteinEntryResponse.model_validate(created)
+
+
+@router.put("/{entry_id}", response_model=ProteinEntryResponse)
+async def update_protein_entry(
+    entry_id: int, entry_update: ProteinEntryUpdate, db: AsyncSession = Depends(get_db)
+) -> ProteinEntryResponse:
+    try:
+        updated = await update_entry(db, entry_id, entry_update)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entry not found")
+    return ProteinEntryResponse.model_validate(updated)
 
 
 @router.get("/simulation", response_model=list[ProteinEntryResponse])

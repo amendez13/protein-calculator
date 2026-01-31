@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.food_item import FoodItem
 from app.models.protein_entry import ProteinEntry, QuantityType
-from app.schemas.protein_entry import ProteinEntryCreate
+from app.schemas.protein_entry import ProteinEntryCreate, ProteinEntryUpdate
 
 
 def calculate_protein(food_item: FoodItem, quantity: float, quantity_type: QuantityType) -> float:
@@ -53,6 +53,7 @@ async def _create_entry(db: AsyncSession, entry: ProteinEntryCreate, *, is_simul
 
     now = datetime.utcnow()
     protein_amount = calculate_protein(food_item, entry.quantity, entry.quantity_type)
+    entry_date = entry.date if entry.date is not None else now.date()
 
     db_entry = ProteinEntry(
         food_item_id=entry.food_item_id,
@@ -60,7 +61,7 @@ async def _create_entry(db: AsyncSession, entry: ProteinEntryCreate, *, is_simul
         quantity_type=entry.quantity_type,
         protein_amount=protein_amount,
         logged_at=now,
-        date=now.date(),
+        date=entry_date,
         is_simulation=is_simulation,
         created_at=now,
     )
@@ -96,6 +97,49 @@ async def delete_simulation_entry(db: AsyncSession, entry_id: int) -> bool:
     await db.delete(entry)
     await db.commit()
     return True
+
+
+async def update_entry(db: AsyncSession, entry_id: int, patch: ProteinEntryUpdate) -> ProteinEntry | None:
+    """Update an existing protein entry.
+
+    Updates the specified entry with the provided fields. If food_item_id, quantity,
+    or quantity_type is changed, the protein_amount is recalculated.
+
+    The `date` field determines which day the entry belongs to (separate from
+    `logged_at` which tracks when the entry was created). Updating `date` moves
+    the entry to a different day's totals.
+
+    Args:
+        db: Database session
+        entry_id: ID of the entry to update
+        patch: Fields to update (only non-None fields are applied)
+
+    Returns:
+        Updated entry, or None if entry not found or is a simulation
+
+    Raises:
+        LookupError: If food_item_id is changed to a non-existent food
+    """
+    entry = await db.get(ProteinEntry, entry_id)
+    if entry is None or entry.is_simulation:
+        return None
+
+    data = patch.model_dump(exclude_unset=True)
+    needs_recalc = any(k in data for k in ("food_item_id", "quantity", "quantity_type"))
+
+    for key, value in data.items():
+        setattr(entry, key, value)
+
+    if needs_recalc:
+        food_item = await db.get(FoodItem, entry.food_item_id)
+        if food_item is None:
+            raise LookupError("Food item not found")
+        entry.protein_amount = calculate_protein(food_item, entry.quantity, entry.quantity_type)
+        entry.food_item = food_item
+
+    await db.commit()
+    await db.refresh(entry, ["food_item"])
+    return entry
 
 
 async def clear_simulation_entries(db: AsyncSession) -> int:

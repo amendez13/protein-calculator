@@ -10,8 +10,10 @@ A FastAPI web app that helps you log and track protein intake throughout the day
 
 - Food database (seeded on first run)
 - Log daily protein entries (grams or servings)
+- Edit entries (change food, quantity, or date)
+- Navigate between days to view/edit past entries
 - Progress wheel (current vs goal)
-- Simulation mode for “what-if” planning
+- Simulation mode for "what-if" planning
 - History view (daily totals)
 - Settings: update daily protein goal, add foods
 
