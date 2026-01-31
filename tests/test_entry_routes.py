@@ -72,3 +72,74 @@ async def test_entries_list_and_delete(api_client: httpx.AsyncClient) -> None:
 async def test_delete_entry_404(api_client: httpx.AsyncClient) -> None:
     response = await api_client.delete("/api/entries/999999")
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_update_entry_quantity(api_client: httpx.AsyncClient) -> None:
+    chicken_id = await _get_food_id_by_name(api_client, "Chicken Breast")
+
+    created = await api_client.post(
+        "/api/entries/",
+        json={"food_item_id": chicken_id, "quantity": 100.0, "quantity_type": "grams"},
+    )
+    assert created.status_code == 201
+    entry_id = created.json()["id"]
+    assert created.json()["protein_amount"] == 31.0
+
+    updated = await api_client.put(
+        f"/api/entries/{entry_id}",
+        json={"quantity": 200.0},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["quantity"] == 200.0
+    assert updated.json()["protein_amount"] == 62.0
+
+
+@pytest.mark.anyio
+async def test_update_entry_food_item(api_client: httpx.AsyncClient) -> None:
+    chicken_id = await _get_food_id_by_name(api_client, "Chicken Breast")
+    egg_id = await _get_food_id_by_name(api_client, "Egg")
+
+    created = await api_client.post(
+        "/api/entries/",
+        json={"food_item_id": chicken_id, "quantity": 100.0, "quantity_type": "grams"},
+    )
+    entry_id = created.json()["id"]
+
+    updated = await api_client.put(
+        f"/api/entries/{entry_id}",
+        json={"food_item_id": egg_id},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["food_item_id"] == egg_id
+    assert updated.json()["food_item"]["name"] == "Egg"
+
+
+@pytest.mark.anyio
+async def test_update_entry_date(api_client: httpx.AsyncClient) -> None:
+    chicken_id = await _get_food_id_by_name(api_client, "Chicken Breast")
+
+    created = await api_client.post(
+        "/api/entries/",
+        json={"food_item_id": chicken_id, "quantity": 100.0, "quantity_type": "grams"},
+    )
+    entry_id = created.json()["id"]
+    original_date = created.json()["date"]
+
+    new_date = "2025-01-15"
+    updated = await api_client.put(
+        f"/api/entries/{entry_id}",
+        json={"date": new_date},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["date"] == new_date
+    assert updated.json()["date"] != original_date
+
+
+@pytest.mark.anyio
+async def test_update_entry_404(api_client: httpx.AsyncClient) -> None:
+    response = await api_client.put(
+        "/api/entries/999999",
+        json={"quantity": 100.0},
+    )
+    assert response.status_code == 404

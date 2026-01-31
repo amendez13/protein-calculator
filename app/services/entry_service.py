@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.food_item import FoodItem
 from app.models.protein_entry import ProteinEntry, QuantityType
-from app.schemas.protein_entry import ProteinEntryCreate
+from app.schemas.protein_entry import ProteinEntryCreate, ProteinEntryUpdate
 
 
 def calculate_protein(food_item: FoodItem, quantity: float, quantity_type: QuantityType) -> float:
@@ -96,6 +96,29 @@ async def delete_simulation_entry(db: AsyncSession, entry_id: int) -> bool:
     await db.delete(entry)
     await db.commit()
     return True
+
+
+async def update_entry(db: AsyncSession, entry_id: int, patch: ProteinEntryUpdate) -> ProteinEntry | None:
+    entry = await db.get(ProteinEntry, entry_id)
+    if entry is None or entry.is_simulation:
+        return None
+
+    data = patch.model_dump(exclude_unset=True)
+    needs_recalc = any(k in data for k in ("food_item_id", "quantity", "quantity_type"))
+
+    for key, value in data.items():
+        setattr(entry, key, value)
+
+    if needs_recalc:
+        food_item = await db.get(FoodItem, entry.food_item_id)
+        if food_item is None:
+            raise LookupError("Food item not found")
+        entry.protein_amount = calculate_protein(food_item, entry.quantity, entry.quantity_type)
+        entry.food_item = food_item
+
+    await db.commit()
+    await db.refresh(entry, ["food_item"])
+    return entry
 
 
 async def clear_simulation_entries(db: AsyncSession) -> int:
