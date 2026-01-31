@@ -250,7 +250,7 @@ select:focus {
   background: rgba(15, 18, 31, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-  z-index: 10;
+  z-index: 200;
 }
 
 .dropdown__item {
@@ -313,7 +313,7 @@ select:focus {
 
 .entry-item {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -533,6 +533,138 @@ select:focus {
   width: fit-content;
 }
 
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.date-nav__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.date-nav__btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.date-nav__display {
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 130px;
+  text-align: center;
+}
+
+.date-nav__display:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.date-nav__picker {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.edit-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(76, 175, 80, 0.18);
+  color: var(--accent);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 14px;
+}
+
+.edit-btn:hover {
+  background: rgba(76, 175, 80, 0.28);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal__content {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  z-index: 101;
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.modal__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+
+.modal__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
 @media (max-width: 520px) {
   .tabs {
     grid-template-columns: repeat(2, 1fr);
@@ -553,15 +685,19 @@ select:focus {
   }
 
   .entry-item {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     grid-template-areas:
-      "name delete"
-      "meta protein";
+      "name edit delete"
+      "meta protein protein";
     align-items: start;
   }
 
   .entry-item__name {
     grid-area: name;
+  }
+
+  .edit-btn {
+    grid-area: edit;
   }
 
   .delete-btn {

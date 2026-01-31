@@ -100,6 +100,28 @@ Response:
 - `201 Created` → `ProteinEntryResponse`
 - `404 Not Found` if `food_item_id` does not exist
 
+### Update entry
+
+`PUT /api/entries/{entry_id}`
+
+Body (partial - only include fields to update):
+```json
+{
+  "food_item_id": 2,
+  "quantity": 150,
+  "quantity_type": "grams",
+  "date": "2026-01-15"
+}
+```
+
+Response:
+- `200 OK` → `ProteinEntryResponse`
+- `404 Not Found` (if the entry does not exist, is a simulation, or food_item_id is invalid)
+
+Notes:
+- When `food_item_id`, `quantity`, or `quantity_type` changes, `protein_amount` is recalculated
+- Updating `date` moves the entry to a different day's totals
+
 ### Delete entry
 
 `DELETE /api/entries/{entry_id}`

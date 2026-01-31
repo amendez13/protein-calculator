@@ -16,6 +16,14 @@ class ProteinEntryCreate(BaseModel):
     quantity: float = Field(gt=0)
     quantity_type: QuantityType = QuantityType.GRAMS
     is_simulation: bool = False
+    date: Date | None = None  # If None, defaults to today
+
+
+class ProteinEntryUpdate(BaseModel):
+    food_item_id: int | None = None
+    quantity: float | None = Field(default=None, gt=0)
+    quantity_type: QuantityType | None = None
+    date: Date | None = None
 
 
 class ProteinEntryResponse(BaseModel):
