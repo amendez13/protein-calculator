@@ -43,7 +43,12 @@
 
         <section class="content" aria-label="Views">
           <section id="view-today" class="view" data-view="today">
-            <h2 class="view__title">Today</h2>
+            <div class="date-navigation">
+              <button id="date-prev" class="date-nav-btn" type="button" aria-label="Previous day">&lt;</button>
+              <span id="date-display" class="date-display" role="button" tabindex="0">Today</span>
+              <button id="date-next" class="date-nav-btn" type="button" aria-label="Next day">&gt;</button>
+              <input type="date" id="date-picker" class="date-picker-hidden" aria-hidden="true" />
+            </div>
 
             <section class="log-section" aria-label="Log protein intake">
               <h3 class="section-title">Log Protein</h3>
@@ -237,6 +242,56 @@
           </section>
         </section>
       </main>
+    </div>
+
+    <div id="edit-modal" class="modal" hidden>
+      <div class="modal__backdrop"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3 class="modal__title">Edit Entry</h3>
+          <button id="edit-modal-close" class="modal__close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <form id="edit-form" class="log-form">
+          <div class="form-group">
+            <label class="label" for="edit-food-search">Food</label>
+            <input
+              type="text"
+              id="edit-food-search"
+              placeholder="Search foods..."
+              autocomplete="off"
+              inputmode="search"
+            />
+            <input type="hidden" id="edit-selected-food-id" />
+            <div id="edit-food-dropdown" class="dropdown" role="listbox" aria-label="Food results" hidden></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label" for="edit-quantity">Amount</label>
+              <input type="number" id="edit-quantity" placeholder="0" step="0.1" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label class="label" for="edit-quantity-type">Unit</label>
+              <select id="edit-quantity-type">
+                <option value="grams">grams</option>
+                <option value="servings">servings</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label" for="edit-date">Date</label>
+            <input type="date" id="edit-date" />
+          </div>
+
+          <div class="modal__actions">
+            <button type="button" id="edit-cancel" class="button">Cancel</button>
+            <button type="submit" class="button button--primary">Save</button>
+          </div>
+          <div id="edit-message" class="message" role="status" aria-live="polite"></div>
+        </form>
+      </div>
     </div>
 
     <script src="/static/js/app.js"></script>

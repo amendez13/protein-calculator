@@ -42,6 +42,35 @@ const API = {
     if (!res.ok) throw new Error("Failed to delete entry");
   },
 
+  async updateEntry(entryId, updates) {
+    const res = await fetch(`/api/entries/${entryId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail || "Failed to update entry");
+    }
+    return res.json();
+  },
+
+  async getEntriesByDate(dateStr) {
+    const url = new URL("/api/entries/", window.location.origin);
+    url.searchParams.set("date", dateStr);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load entries");
+    return res.json();
+  },
+
+  async getSummaryByDate(dateStr) {
+    const url = new URL("/api/summary/day", window.location.origin);
+    url.searchParams.set("date", dateStr);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load summary");
+    return res.json();
+  },
+
   async getSimulationSummary() {
     const res = await fetch("/api/summary/simulation");
     if (!res.ok) throw new Error("Failed to load simulation summary");
@@ -130,19 +159,23 @@ const App = {
     goal: 150,
     current: 0,
     currentTab: "today",
+    selectedDate: new Date().toISOString().split("T")[0],
+    editingEntry: null,
   },
 
   init() {
     this.bindTabs();
     this.bindLogForm();
     this.bindEntriesList();
+    this.bindDateNavigation();
+    this.bindEditModal();
     this.bindSimulationForm();
     this.bindSimulationEntriesList();
     this.bindClearSimulation();
     this.bindHistoryView();
     this.bindSettingsView();
     this.refreshSummary();
-    this.loadTodayEntries();
+    this.loadEntriesForDate(this.state.selectedDate);
     this.renderViews();
   },
 
@@ -317,18 +350,279 @@ const App = {
     if (!list) return;
 
     list.addEventListener("click", async (e) => {
-      const button = e.target.closest(".delete-btn");
-      if (!button) return;
-      const id = Number(button.getAttribute("data-id"));
-      if (!id) return;
+      const deleteBtn = e.target.closest(".delete-btn");
+      if (deleteBtn) {
+        const id = Number(deleteBtn.getAttribute("data-id"));
+        if (!id) return;
+        deleteBtn.disabled = true;
+        try {
+          await this.deleteEntry(id);
+        } finally {
+          deleteBtn.disabled = false;
+        }
+        return;
+      }
 
-      button.disabled = true;
-      try {
-        await this.deleteEntry(id);
-      } finally {
-        button.disabled = false;
+      const editBtn = e.target.closest(".edit-btn");
+      if (editBtn) {
+        const id = Number(editBtn.getAttribute("data-id"));
+        if (!id) return;
+        const entry = this.state.entries.find((e) => e.id === id);
+        if (entry) this.openEditModal(entry);
       }
     });
+  },
+
+  bindDateNavigation() {
+    const prevBtn = document.getElementById("date-prev");
+    const nextBtn = document.getElementById("date-next");
+    const dateDisplay = document.getElementById("date-display");
+    const datePicker = document.getElementById("date-picker");
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => this.changeDate(-1));
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => this.changeDate(1));
+    }
+    if (dateDisplay && datePicker) {
+      dateDisplay.addEventListener("click", () => {
+        datePicker.value = this.state.selectedDate;
+        datePicker.showPicker();
+      });
+      datePicker.addEventListener("change", () => {
+        if (datePicker.value) {
+          this.state.selectedDate = datePicker.value;
+          this.loadEntriesForDate(this.state.selectedDate);
+          this.renderDateDisplay();
+        }
+      });
+    }
+    this.renderDateDisplay();
+  },
+
+  changeDate(delta) {
+    const current = new Date(this.state.selectedDate);
+    current.setDate(current.getDate() + delta);
+    this.state.selectedDate = current.toISOString().split("T")[0];
+    this.loadEntriesForDate(this.state.selectedDate);
+    this.renderDateDisplay();
+  },
+
+  renderDateDisplay() {
+    const display = document.getElementById("date-display");
+    if (!display) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    if (this.state.selectedDate === today) {
+      display.textContent = "Today";
+    } else {
+      const date = new Date(this.state.selectedDate + "T12:00:00");
+      const fmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
+      display.textContent = fmt.format(date);
+    }
+  },
+
+  bindEditModal() {
+    const modal = document.getElementById("edit-modal");
+    const closeBtn = document.getElementById("edit-modal-close");
+    const cancelBtn = document.getElementById("edit-cancel");
+    const form = document.getElementById("edit-form");
+
+    if (!modal) return;
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => this.closeEditModal());
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => this.closeEditModal());
+    }
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) this.closeEditModal();
+    });
+
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await this.submitEditForm();
+      });
+    }
+
+    this.bindEditFoodSearch();
+  },
+
+  bindEditFoodSearch() {
+    const foodSearch = document.getElementById("edit-food-search");
+    const foodDropdown = document.getElementById("edit-food-dropdown");
+    const selectedFoodId = document.getElementById("edit-selected-food-id");
+
+    if (!foodSearch || !foodDropdown || !selectedFoodId) return;
+
+    const hideDropdown = () => {
+      foodDropdown.innerHTML = "";
+      foodDropdown.setAttribute("hidden", "");
+    };
+
+    const renderDropdown = (foods) => {
+      if (!foods.length) {
+        hideDropdown();
+        return;
+      }
+      foodDropdown.removeAttribute("hidden");
+      foodDropdown.innerHTML = foods
+        .slice(0, 20)
+        .map((food) => {
+          const meta = food.serving_size_grams
+            ? `${food.protein_per_100g}g/100g • ${food.serving_size_grams}g ${food.serving_name || "serving"}`
+            : `${food.protein_per_100g}g/100g`;
+          return `
+            <div class="dropdown__item" role="option" data-id="${food.id}" data-name="${food.name}">
+              ${food.name}
+              <span class="dropdown__meta">${meta}</span>
+            </div>
+          `;
+        })
+        .join("");
+    };
+
+    let searchTimeout = null;
+    let lastQuery = "";
+
+    foodSearch.addEventListener("input", () => {
+      const query = foodSearch.value.trim();
+      lastQuery = query;
+      selectedFoodId.value = "";
+
+      if (searchTimeout) window.clearTimeout(searchTimeout);
+      if (!query) {
+        hideDropdown();
+        return;
+      }
+
+      searchTimeout = window.setTimeout(async () => {
+        try {
+          const foods = await API.getFoods(query);
+          if (lastQuery !== query) return;
+          renderDropdown(foods);
+        } catch {
+          hideDropdown();
+        }
+      }, 200);
+    });
+
+    foodDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest(".dropdown__item");
+      if (!item) return;
+      const id = item.getAttribute("data-id");
+      const name = item.getAttribute("data-name");
+      if (!id || !name) return;
+
+      selectedFoodId.value = id;
+      foodSearch.value = name;
+      hideDropdown();
+    });
+  },
+
+  openEditModal(entry) {
+    this.state.editingEntry = entry;
+    const modal = document.getElementById("edit-modal");
+    const foodSearch = document.getElementById("edit-food-search");
+    const selectedFoodId = document.getElementById("edit-selected-food-id");
+    const quantity = document.getElementById("edit-quantity");
+    const quantityType = document.getElementById("edit-quantity-type");
+    const date = document.getElementById("edit-date");
+    const message = document.getElementById("edit-message");
+
+    if (!modal) return;
+
+    if (foodSearch) foodSearch.value = entry.food_item?.name || "";
+    if (selectedFoodId) selectedFoodId.value = entry.food_item_id;
+    if (quantity) quantity.value = entry.quantity;
+    if (quantityType) quantityType.value = entry.quantity_type;
+    if (date) date.value = entry.date;
+    if (message) message.textContent = "";
+
+    modal.removeAttribute("hidden");
+  },
+
+  closeEditModal() {
+    this.state.editingEntry = null;
+    const modal = document.getElementById("edit-modal");
+    if (modal) modal.setAttribute("hidden", "");
+  },
+
+  async submitEditForm() {
+    const entry = this.state.editingEntry;
+    if (!entry) return;
+
+    const selectedFoodId = document.getElementById("edit-selected-food-id");
+    const quantity = document.getElementById("edit-quantity");
+    const quantityType = document.getElementById("edit-quantity-type");
+    const date = document.getElementById("edit-date");
+    const message = document.getElementById("edit-message");
+    const submitBtn = document.querySelector("#edit-form button[type='submit']");
+
+    const showMessage = (text, kind) => {
+      if (!message) return;
+      message.classList.toggle("is-error", kind === "error");
+      message.classList.toggle("is-success", kind === "success");
+      message.textContent = text;
+    };
+
+    const updates = {};
+    const newFoodId = Number(selectedFoodId?.value);
+    const newQuantity = Number(quantity?.value);
+    const newQuantityType = quantityType?.value;
+    const newDate = date?.value;
+
+    if (newFoodId && newFoodId !== entry.food_item_id) {
+      updates.food_item_id = newFoodId;
+    }
+    if (Number.isFinite(newQuantity) && newQuantity > 0 && newQuantity !== entry.quantity) {
+      updates.quantity = newQuantity;
+    }
+    if (newQuantityType && newQuantityType !== entry.quantity_type) {
+      updates.quantity_type = newQuantityType;
+    }
+    if (newDate && newDate !== entry.date) {
+      updates.date = newDate;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      showMessage("No changes to save.", "error");
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      await API.updateEntry(entry.id, updates);
+      showMessage("Updated.", "success");
+      this.closeEditModal();
+      await this.loadEntriesForDate(this.state.selectedDate);
+      await this.refreshSummary();
+    } catch (err) {
+      showMessage(err instanceof Error ? err.message : "Failed to update.", "error");
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  },
+
+  async loadEntriesForDate(dateStr) {
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      let entries;
+      if (dateStr === today) {
+        entries = await API.getTodayEntries();
+      } else {
+        entries = await API.getEntriesByDate(dateStr);
+      }
+      this.state.entries = Array.isArray(entries) ? entries : [];
+      this.renderEntries();
+    } catch {
+      this.state.entries = [];
+      this.renderEntries();
+    }
   },
 
   async loadTodayEntries() {
@@ -374,6 +668,7 @@ const App = {
             <div class="entry-item__name">${name}</div>
             <div class="entry-item__meta">${qty}</div>
             <div class="entry-item__protein">${protein}</div>
+            <button class="edit-btn" type="button" data-id="${entry.id}" aria-label="Edit entry">✎</button>
             <button class="delete-btn" type="button" data-id="${entry.id}" aria-label="Delete entry">×</button>
           </div>
         `;
