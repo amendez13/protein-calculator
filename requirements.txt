@@ -1,6 +1,6 @@
 # Core dependencies
 PyYAML>=6.0.3
-python-dotenv>=1.0.0
+python-dotenv>=1.2.2
 
 # FastAPI and server
 fastapi>=0.109.0
