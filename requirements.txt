@@ -9,7 +9,7 @@ httpx>=0.26.0
 
 # Database (SQLite with async support)
 aiosqlite>=0.22.1
-sqlalchemy>=2.0.0
+sqlalchemy>=2.0.50
 greenlet>=3.5.1
 
 # Validation and utilities
