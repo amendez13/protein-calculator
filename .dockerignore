@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+tests/
+ansible/
+docs/
+*.md
+.env
+*.db
+.git/
+.github/
