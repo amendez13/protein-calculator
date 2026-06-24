@@ -5,7 +5,7 @@ This is a minimal guide for deploying `protein-calculator` on a Linux VPS. It as
 ## Requirements
 
 - Linux VPS (Ubuntu/Debian are common)
-- Python 3.10+
+- Python 3.12+
 - A reverse proxy (optional but recommended)
 
 ## Install and Run (Ansible)

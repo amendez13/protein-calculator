@@ -1,7 +1,7 @@
 # protein-calculator
 
 ![CI](https://github.com/amendez13/protein-calculator/workflows/CI/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)
 
 A FastAPI web app that helps you log and track protein intake throughout the day.
@@ -21,7 +21,7 @@ A FastAPI web app that helps you log and track protein intake throughout the day
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- Python 3.12 or higher
 - pip (Python package installer)
 
 ### Installation
@@ -116,7 +116,7 @@ All checks run automatically via pre-commit hooks and CI.
 GitHub Actions runs the following checks on every push and PR:
 
 1. **Lint**: Black, isort, flake8, mypy
-2. **Test**: pytest across Python 3.10, 3.11, 3.12
+2. **Test**: pytest across Python 3.12
 3. **Coverage**: 80% minimum coverage
 4. **Security**: bandit and pip-audit
 
