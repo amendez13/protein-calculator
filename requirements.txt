@@ -4,7 +4,7 @@ python-dotenv>=1.2.2
 
 # FastAPI and server
 fastapi>=0.140.13
-uvicorn[standard]>=0.51.0
+uvicorn[standard]>=0.52.0
 httpx>=0.28.1
 
 # Database (SQLite with async support)
