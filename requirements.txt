@@ -1,15 +1,15 @@
 # Core dependencies
 PyYAML>=6.0.3
-python-dotenv>=1.2.2
+python-dotenv>=1.2.3
 
 # FastAPI and server
 fastapi>=0.141.1
-uvicorn[standard]>=0.52.1
+uvicorn[standard]>=0.52.3
 httpx>=0.28.1
 
 # Database (SQLite with async support)
 aiosqlite>=0.22.1
-sqlalchemy>=2.0.51
+sqlalchemy>=2.0.52
 greenlet>=3.5.5
 
 # Validation and utilities
